@@ -9,7 +9,7 @@ import java.util.List;
 @DiscriminatorValue("OUTGOING")
 @Data @NoArgsConstructor
 @AllArgsConstructor @Builder
-class OutgoingDeclaration extends Declaration {
+public class OutgoingDeclaration extends Declaration {
 
     @OneToMany(mappedBy = "outgoingDeclaration", cascade = CascadeType.ALL)
     private List<MaterialMovement> movements;

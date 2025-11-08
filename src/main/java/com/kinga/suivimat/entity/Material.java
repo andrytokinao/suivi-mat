@@ -20,13 +20,15 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Entity
-class Material {
+public class Material {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
     private String reference;
+    private String serialNumber;
+    private String description;
 
     @Enumerated(EnumType.STRING)
     private MaterialState.MaterialStatus status;
@@ -47,4 +49,9 @@ class Material {
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
     private List<Maintenance> maintenances;
+    @Enumerated(EnumType.STRING)
+    private MaterialCondition currentCondition;
+    enum MaterialCondition {
+        GOOD, DAMAGED, BROKEN, IN_REPAIR
+    }
 }

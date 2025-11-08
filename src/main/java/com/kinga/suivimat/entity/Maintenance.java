@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-class Maintenance {
+public class Maintenance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,7 +43,7 @@ class Maintenance {
     }
 
 
-    enum MaintenanceStatus {
+    public enum MaintenanceStatus {
         PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
     }
 }

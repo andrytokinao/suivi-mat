@@ -10,7 +10,7 @@ import java.util.List;
 @DiscriminatorValue("RETURN")
 @Data @NoArgsConstructor
 @AllArgsConstructor @Builder
-class ReturnDeclaration extends Declaration {
+public class ReturnDeclaration extends Declaration {
 
     @OneToMany(mappedBy = "returnDeclaration", cascade = CascadeType.ALL)
     private List<MaterialMovement> movements;

@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-class MaterialMovement {
+public class MaterialMovement {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -31,7 +31,7 @@ class MaterialMovement {
     @ManyToOne
     @JoinColumn(name = "return_declaration_id")
     private ReturnDeclaration returnDeclaration; // nullable
-    enum MovementStatus {
+   public enum MovementStatus {
         PENDING_VALIDATION, VALIDATED, PENDING_VERIFICATION, VERIFIED, REJECTED
     }
 
