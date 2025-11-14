@@ -51,7 +51,7 @@ public class Material {
     private List<Maintenance> maintenances;
     @Enumerated(EnumType.STRING)
     private MaterialCondition currentCondition;
-    enum MaterialCondition {
+    public enum MaterialCondition {
         GOOD, DAMAGED, BROKEN, IN_REPAIR
     }
 }

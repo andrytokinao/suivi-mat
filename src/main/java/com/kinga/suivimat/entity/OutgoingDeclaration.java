@@ -7,7 +7,7 @@ import java.util.List;
 
 @Entity
 @DiscriminatorValue("OUTGOING")
-@Data @NoArgsConstructor
+@Data
 @AllArgsConstructor @Builder
 public class OutgoingDeclaration extends Declaration {
 
@@ -15,5 +15,19 @@ public class OutgoingDeclaration extends Declaration {
     private List<MaterialMovement> movements;
     private String usagePurpose;
     private String validatedBy;
+
+
+    public OutgoingDeclaration() {
+    }
+
+    @Override
+    public String getDeclarationType() {
+        return "SORTIE";
+    }
+
+    @Override
+    public String getAdditionalInfo() {
+        return usagePurpose;
+    }
 
 }

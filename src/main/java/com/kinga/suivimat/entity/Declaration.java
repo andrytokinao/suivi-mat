@@ -14,9 +14,15 @@ public abstract class Declaration {
     private Long id;
     private LocalDateTime declarationDate;
     private String declaredBy;
+    private String validateBy;
     private String note;
     private DeclarationStatus status;
+    public abstract String getDeclarationType();
 
+    public abstract String getAdditionalInfo();
+    public Declaration() {
+
+    }
     public enum DeclarationStatus {
         PENDING, APPROVED, REJECTED
     }

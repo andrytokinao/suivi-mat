@@ -20,7 +20,7 @@ class MaterialState {
     private Material material;
 
     @Enumerated(EnumType.STRING)
-    private Maintenance.MaterialCondition state;
+    private Material.MaterialCondition state;
 
     private String description;
     private String updatedBy;

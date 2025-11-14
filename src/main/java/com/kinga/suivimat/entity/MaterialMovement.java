@@ -23,6 +23,8 @@ public class MaterialMovement {
 
     @Enumerated(EnumType.STRING)
     private MovementStatus status;
+    private LocalDateTime movementDate;
+    private Material.MaterialCondition condition;
 
     @ManyToOne
     @JoinColumn(name = "outgoing_declaration_id")
@@ -31,7 +33,9 @@ public class MaterialMovement {
     @ManyToOne
     @JoinColumn(name = "return_declaration_id")
     private ReturnDeclaration returnDeclaration; // nullable
-   public enum MovementStatus {
+
+
+    public enum MovementStatus {
         PENDING_VALIDATION, VALIDATED, PENDING_VERIFICATION, VERIFIED, REJECTED
     }
 

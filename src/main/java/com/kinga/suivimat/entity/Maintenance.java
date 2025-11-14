@@ -35,12 +35,7 @@ public class Maintenance {
     @Enumerated(EnumType.STRING)
     private MaintenanceStatus status;
 
-    enum MaterialCondition {
-        GOOD,       // Matériel en bon état, fonctionne normalement
-        DAMAGED,    // Matériel endommagé (ex : rayure, pièce cassée mais toujours utilisable)
-        BROKEN,     // Matériel en panne ou inutilisable
-        IN_REPAIR   // Matériel en cours de réparation ou d’entretien
-    }
+
 
 
     public enum MaintenanceStatus {

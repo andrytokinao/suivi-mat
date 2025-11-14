@@ -18,4 +18,14 @@ public class ReturnDeclaration extends Declaration {
     private LocalDateTime verifiedAt;
     private String verifiedBy;
     private String returnConditionNote;
+
+    @Override
+    public String getDeclarationType() {
+        return "RETOUR";
+    }
+
+    @Override
+    public String getAdditionalInfo() {
+        return returnConditionNote;
+    }
 }
