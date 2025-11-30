@@ -24,7 +24,7 @@ public class MaterialMovement {
     @Enumerated(EnumType.STRING)
     private MovementStatus status;
     private LocalDateTime movementDate;
-    private Material.MaterialCondition condition;
+    private Material.MaterialCondition materialCondition;
 
     @ManyToOne
     @JoinColumn(name = "outgoing_declaration_id")

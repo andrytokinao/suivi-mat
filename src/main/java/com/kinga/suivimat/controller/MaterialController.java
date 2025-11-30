@@ -2,13 +2,13 @@ package com.kinga.suivimat.controller;
 
 import com.kinga.suivimat.entity.Material;
 import com.kinga.suivimat.services.MaterialService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
+@RestController
+@RequestMapping("/api/materials")
 public class MaterialController {
 
     private final MaterialService materialService;
@@ -17,14 +17,31 @@ public class MaterialController {
         this.materialService = materialService;
     }
 
-    @GetMapping("/materials")
-    public String listMaterials(Model model) {
-        model.addAttribute("pageTitle", "Liste des matériels");
+    @GetMapping
+    public List<Material> getAllMaterials() {
+        return materialService.getAllMaterials();
+    }
 
-        // Récupération des matériaux depuis la base de données
-        List<Material> materials = materialService.getAllMaterials();
-        model.addAttribute("materials", materials);
+    @GetMapping("/{id}")
+    public ResponseEntity<Material> getMaterialById(@PathVariable Long id) {
+        return materialService.getMaterialById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
-        return "material-list"; // Thymeleaf template à créer ou modifier
+    @PostMapping
+    public Material createMaterial(@RequestBody Material material) {
+        return materialService.saveMaterial(material);
+    }
+
+    @PutMapping("/{id}")
+    public Material updateMaterial(@PathVariable Long id, @RequestBody Material material) {
+        return materialService.updateMaterial(id, material);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMaterial(@PathVariable Long id) {
+        materialService.deleteMaterial(id);
+        return ResponseEntity.noContent().build();
     }
 }
