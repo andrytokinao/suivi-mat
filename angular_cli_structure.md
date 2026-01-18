@@ -25,7 +25,7 @@ ng generate interface app/models/declaration
 ```
 
 ```bash
-touch src/app/models/enums.ts
+touch src/models/enums.ts
 ```
 
 ---

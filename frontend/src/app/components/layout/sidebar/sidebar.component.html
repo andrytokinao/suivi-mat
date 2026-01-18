@@ -1,0 +1,38 @@
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2>SuiviMat</h2>
+    <p class="text-sm text-gray-400">Gestion de Matériel</p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div *ngFor="let item of menuItems" class="menu-item-group">
+      <div
+        class="menu-item"
+        [class.has-children]="item.children"
+        (click)="item.children ? toggleExpand(item.label) : navigate(item.route)">
+        <span class="menu-icon">📦</span>
+        <span class="menu-label">{{ item.label }}</span>
+        <span *ngIf="item.children" class="expand-icon">
+          {{ isExpanded(item.label) ? '▼' : '▶' }}
+        </span>
+      </div>
+
+      <div *ngIf="item.children && isExpanded(item.label)" class="submenu">
+        <div
+          *ngFor="let child of item.children"
+          class="submenu-item"
+          (click)="navigate(child.route)">
+          <span class="submenu-icon">•</span>
+          <span class="submenu-label">{{ child.label }}</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <span class="user-icon">👤</span>
+      <span class="user-name">Utilisateur</span>
+    </div>
+  </div>
+</div>

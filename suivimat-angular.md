@@ -91,7 +91,7 @@ src/
 
 ---
 
-## 1. Models (src/app/models/)
+## 1. Models (src/models/)
 
 ### enums.ts
 ```typescript
@@ -219,7 +219,7 @@ export interface MaterialMovement {
 
 ---
 
-## 2. Services (src/app/services/)
+## 2. Services (src/services/)
 
 ### material.service.ts
 ```typescript
