@@ -1,0 +1,11 @@
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-validation-list',
+  imports: [],
+  templateUrl: './validation-list.component.html',
+  styleUrl: './validation-list.component.css'
+})
+export class ValidationListComponent {
+
+}
