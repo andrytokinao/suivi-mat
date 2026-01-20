@@ -10,57 +10,54 @@ export class CategoryService {
   private categories: MaterialCategory[] = [
     {
       id: 1,
-      name: 'Informatique',
-      description: 'Matériel informatique',
+      name: 'Topographie',
+      description: 'Matériel topographique',
       parent: null,
       children: [
         {
           id: 2,
-          name: 'Ordinateurs',
-          description: 'PC et laptops',
+          name: 'Instruments topo',
+          description: 'Station totale, GPS, niveaux',
           parent: 1
         },
         {
           id: 3,
-          name: 'Périphériques',
-          description: 'Souris, claviers, écrans',
-          parent: 1
-        },
-        {
-          id: 4,
-          name: 'Réseau',
-          description: 'Équipements réseau',
+          name: 'Accessoires topo',
+          description: 'Trépieds, mires, jalons',
           parent: 1
         }
       ]
     },
     {
-      id: 5,
-      name: 'Mobilier',
-      description: 'Mobilier de bureau',
+      id: 4,
+      name: 'Informatique & Impression',
+      description: 'Matériel informatique et impression',
       parent: null,
       children: [
         {
-          id: 6,
-          name: 'Chaises',
-          description: 'Chaises de bureau',
-          parent: 5
-        },
+          id: 5,
+          name: 'Logiciels techniques',
+          description: 'AutoCAD, Civil 3D, Covadis',
+          parent: 4
+        }
+      ]
+    },
+    {
+      id: 6,
+      name: 'BTP & Sécurité',
+      description: 'Matériel de chantier et sécurité',
+      parent: null,
+      children: [
         {
           id: 7,
-          name: 'Bureaux',
-          description: 'Tables de travail',
-          parent: 5
-        },
-        {
-          id: 8,
-          name: 'Rangement',
-          description: 'Armoires et étagères',
-          parent: 5
+          name: 'EPI',
+          description: 'Casques, gilets, chaussures',
+          parent: 6
         }
       ]
     }
   ];
+
   protected selectedCategoriesSubject = new BehaviorSubject<Set<number>>(new Set<number>());
   selectedCategories$ = this.selectedCategoriesSubject.asObservable();
   private categoriesSubject = new BehaviorSubject<MaterialCategory[]>(this.categories);
