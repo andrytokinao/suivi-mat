@@ -7,7 +7,7 @@ import { MaterialStatus, MaterialCondition } from '../models/enums';
   providedIn: 'root'
 })
 export class MaterialService {
-  private materials: Material[] = [
+  materials: Material[] = [
     {
       id: 1,
       name: 'Laptop Dell XPS 15',

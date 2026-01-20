@@ -1,5 +1,6 @@
 package com.kinga.suivimat.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,7 @@ class MaterialState {
     private Long id;
 
     @ManyToOne
+    @JsonBackReference
     private Material material;
 
     @Enumerated(EnumType.STRING)

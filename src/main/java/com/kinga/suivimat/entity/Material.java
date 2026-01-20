@@ -1,6 +1,8 @@
 package com.kinga.suivimat.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,6 +36,7 @@ public class Material {
     private MaterialState.MaterialStatus status;
 
     @ManyToOne
+    @JsonBackReference
     private MaterialCategory category;
 
     private String purchaseId; // Lien vers gestion des achats
@@ -42,12 +45,15 @@ public class Material {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<MaterialMovement> movements;
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<MaterialState> states;
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Maintenance> maintenances;
     @Enumerated(EnumType.STRING)
     private MaterialCondition currentCondition;

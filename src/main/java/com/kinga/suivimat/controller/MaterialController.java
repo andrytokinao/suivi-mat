@@ -1,14 +1,16 @@
 package com.kinga.suivimat.controller;
 
 import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialCategory;
 import com.kinga.suivimat.services.MaterialService;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Controller
+@RestController
+@RequestMapping("/api/materials")
 public class MaterialController {
 
     private final MaterialService materialService;
@@ -17,14 +19,13 @@ public class MaterialController {
         this.materialService = materialService;
     }
 
-    @GetMapping("/materials")
-    public String listMaterials(Model model) {
-        model.addAttribute("pageTitle", "Liste des matériels");
-
-        // Récupération des matériaux depuis la base de données
+    @GetMapping()
+    public List<Material> listMaterials() {
         List<Material> materials = materialService.getAllMaterials();
-        model.addAttribute("materials", materials);
-
-        return "material-list"; // Thymeleaf template à créer ou modifier
+         return materials;
+    }
+    @GetMapping("root-categories")
+    public List<MaterialCategory> categories() {
+        return materialService.getRootCategories();
     }
 }

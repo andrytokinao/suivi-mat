@@ -1,4 +1,5 @@
 package com.kinga.suivimat.entity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,6 +11,7 @@ public class MaterialMovement {
     private Long id;
 
     @ManyToOne
+    @JsonBackReference
     private Material material;
 
     private int quantity;
@@ -28,10 +30,12 @@ public class MaterialMovement {
 
     @ManyToOne
     @JoinColumn(name = "outgoing_declaration_id")
+    @JsonBackReference
     private OutgoingDeclaration outgoingDeclaration;
 
     @ManyToOne
     @JoinColumn(name = "return_declaration_id")
+    @JsonBackReference
     private ReturnDeclaration returnDeclaration; // nullable
 
 

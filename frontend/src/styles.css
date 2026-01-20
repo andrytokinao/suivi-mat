@@ -1,3 +1,17 @@
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+:root {
+  --filter-primary: #6366f1;
+  --filter-primary-light: #818cf8;
+  --filter-bg: #ffffff;
+  --filter-surface: #f8fafc;
+  --filter-border: #e2e8f0;
+  --filter-text: #0f172a;
+  --filter-text-light: #64748b;
+  --filter-hover: #f1f5f9;
+  --filter-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --filter-shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
 * {
   margin: 0;
   padding: 0;

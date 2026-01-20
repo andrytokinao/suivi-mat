@@ -1,0 +1,108 @@
+<!-- Filtres sélectionnés -->
+<div class="selected-filters" *ngIf="selectedCategories.size > 0">
+  <span class="filters-label">
+    <i class="fa fa-cube"></i>
+    Filtres actifs
+  </span>
+
+  <mat-chip-listbox class="chips-container">
+    <mat-chip
+      *ngFor="let catId of getSelectedCategoriesArray()"
+      removable
+      (removed)="toggleCategory(catId)"
+      class="filter-chip"
+    >
+      {{ getCategoryName(catId) }}
+      <mat-icon matChipRemove>
+        <i class="fa fa-close"></i>
+      </mat-icon>
+    </mat-chip>
+  </mat-chip-listbox>
+
+  <button
+    mat-button
+    class="clear-all-btn"
+    (click)="clearAllFilters()"
+    *ngIf="selectedCategories.size > 1"
+  >
+    Tout effacer
+  </button>
+</div>
+
+<!-- Bouton d'ouverture du menu -->
+<button
+  mat-flat-button
+  color="primary"
+  [matMenuTriggerFor]="categoryMenu"
+  class="category-trigger"
+>
+  <i class="fa fa-filter"></i>
+  Filtrer par catégorie
+  <span class="chevron">
+    <i class="fas fa-chevron-down"></i>
+  </span>
+</button>
+
+<!-- Menu des catégories -->
+<mat-menu #categoryMenu="matMenu" class="category-menu" xPosition="before">
+  <div class="category-menu-content" (click)="$event.stopPropagation()">
+
+    <!-- Header du menu -->
+    <div class="menu-header">
+      <h3>Sélectionner des catégories</h3>
+      <button mat-icon-button class="close-btn" [matMenuTriggerFor]="null">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <!-- Barre de recherche (optionnelle) -->
+
+
+    <!-- Liste des catégories -->
+    <div class="categories-list">
+      <ng-container *ngFor="let cat of categories; let last = last">
+        <!-- Catégorie principale -->
+        <div class="category-group">
+          <mat-checkbox
+            class="category-item"
+            [checked]="selectedCategories.has(cat.id)"
+            (change)="toggleCategory(cat.id)"
+          >
+            <span class="category-name">{{ cat.name }}</span>
+            <span class="category-count" *ngIf="getCategoryCount(cat.id) > 0">
+              {{ getCategoryCount(cat.id) }}
+            </span>
+          </mat-checkbox>
+
+          <!-- Sous-catégories -->
+          <div class="subcategory-list" *ngIf="cat.children?.length">
+            <mat-checkbox
+              class="subcategory-item"
+              *ngFor="let child of cat.children"
+              [checked]="selectedCategories.has(child.id)"
+              (change)="toggleCategory(child.id)"
+            >
+              <span class="subcategory-name">{{ child.name }}</span>
+              <span class="category-count" *ngIf="getCategoryCount(child.id) > 0">
+                {{ getCategoryCount(child.id) }}
+              </span>
+            </mat-checkbox>
+          </div>
+        </div>
+
+        <mat-divider *ngIf="!last"></mat-divider>
+      </ng-container>
+    </div>
+
+    <!-- Footer du menu -->
+    <div class="menu-footer">
+      <button mat-button (click)="clearAllFilters()">
+        Réinitialiser
+      </button>
+      <button mat-flat-button color="primary" [matMenuTriggerFor]="null">
+        Appliquer
+      </button>
+    </div>
+
+  </div>
+</mat-menu>

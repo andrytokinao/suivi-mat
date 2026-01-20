@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface CategoryRepository extends JpaRepository<MaterialCategory, Long> {
     List<MaterialCategory> findByParent(MaterialCategory parent);
+    List<MaterialCategory> findMaterialCategoriesByParentId(Long parentId );
 }

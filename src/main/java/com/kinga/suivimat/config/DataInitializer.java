@@ -31,6 +31,8 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        if (this.categoryRepository.count()> 0)
+            return;
         // --- Catégories ---
         MaterialCategory topographie = new MaterialCategory();
         topographie.setName("Topographie");
@@ -40,6 +42,11 @@ public class DataInitializer implements CommandLineRunner {
 
         MaterialCategory mesure = new MaterialCategory();
         mesure.setName("Mesure");
+        MaterialCategory terrain = new MaterialCategory();
+        terrain.setName("Material sur terrin ");
+        terrain =  categoryRepository.save(terrain);
+        topographie.setParent(terrain);
+        mesure.setParent(terrain);
 
         categoryRepository.saveAll(List.of(topographie, numerique, mesure));
 

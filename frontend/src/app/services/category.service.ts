@@ -6,17 +6,63 @@ import { MaterialCategory } from '../models/category';
   providedIn: 'root'
 })
 export class CategoryService {
-  private categories: MaterialCategory[] = [
-    { id: 1, name: 'Informatique', parent: null, description: 'Matériel informatique' },
-    { id: 2, name: 'Ordinateurs', parent: 1, description: 'PC et laptops' },
-    { id: 3, name: 'Périphériques', parent: 1, description: 'Souris, claviers, écrans' },
-    { id: 4, name: 'Réseau', parent: 1, description: 'Équipements réseau' },
-    { id: 5, name: 'Mobilier', parent: null, description: 'Mobilier de bureau' },
-    { id: 6, name: 'Chaises', parent: 5, description: 'Chaises de bureau' },
-    { id: 7, name: 'Bureaux', parent: 5, description: 'Tables de travail' },
-    { id: 8, name: 'Rangement', parent: 5, description: 'Armoires et étagères' }
-  ];
 
+  private categories: MaterialCategory[] = [
+    {
+      id: 1,
+      name: 'Informatique',
+      description: 'Matériel informatique',
+      parent: null,
+      children: [
+        {
+          id: 2,
+          name: 'Ordinateurs',
+          description: 'PC et laptops',
+          parent: 1
+        },
+        {
+          id: 3,
+          name: 'Périphériques',
+          description: 'Souris, claviers, écrans',
+          parent: 1
+        },
+        {
+          id: 4,
+          name: 'Réseau',
+          description: 'Équipements réseau',
+          parent: 1
+        }
+      ]
+    },
+    {
+      id: 5,
+      name: 'Mobilier',
+      description: 'Mobilier de bureau',
+      parent: null,
+      children: [
+        {
+          id: 6,
+          name: 'Chaises',
+          description: 'Chaises de bureau',
+          parent: 5
+        },
+        {
+          id: 7,
+          name: 'Bureaux',
+          description: 'Tables de travail',
+          parent: 5
+        },
+        {
+          id: 8,
+          name: 'Rangement',
+          description: 'Armoires et étagères',
+          parent: 5
+        }
+      ]
+    }
+  ];
+  protected selectedCategoriesSubject = new BehaviorSubject<Set<number>>(new Set<number>());
+  selectedCategories$ = this.selectedCategoriesSubject.asObservable();
   private categoriesSubject = new BehaviorSubject<MaterialCategory[]>(this.categories);
   public categories$ = this.categoriesSubject.asObservable();
 
@@ -81,5 +127,17 @@ export class CategoryService {
     } else {
       throw new Error('Impossible de supprimer une catégorie avec des sous-catégories');
     }
+  }
+
+  toggleCategory(id:number) {
+    let selectedCategories = this.selectedCategoriesSubject.value;
+    selectedCategories.has(id)
+      ? selectedCategories.delete(id)
+      : selectedCategories.add(id);
+    this.selectedCategoriesSubject.next(selectedCategories);
+  }
+
+  clearAllFilters() {
+    this.selectedCategoriesSubject.next(new Set<number>);
   }
 }

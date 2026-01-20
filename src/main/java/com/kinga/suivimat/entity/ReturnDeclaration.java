@@ -13,6 +13,7 @@ import java.util.List;
 public class ReturnDeclaration extends Declaration {
 
     @OneToMany(mappedBy = "returnDeclaration", cascade = CascadeType.ALL)
+
     private List<MaterialMovement> movements;
 
     private LocalDateTime verifiedAt;

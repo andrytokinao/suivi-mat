@@ -1,6 +1,8 @@
 package com.kinga.suivimat.services;
 
 import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialCategory;
+import com.kinga.suivimat.repository.CategoryRepository;
 import com.kinga.suivimat.repository.MaterialRepository;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +13,11 @@ import java.util.Optional;
 public class MaterialService {
 
     private final MaterialRepository materialRepository;
+    private final CategoryRepository categoryRepository;
 
-    public MaterialService(MaterialRepository materialRepository) {
+    public MaterialService(MaterialRepository materialRepository, CategoryRepository categoryRepository) {
         this.materialRepository = materialRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     public List<Material> getAllMaterials() {
@@ -30,5 +34,9 @@ public class MaterialService {
 
     public void deleteMaterial(Long id) {
         materialRepository.deleteById(id);
+    }
+
+    public List<MaterialCategory> getRootCategories() {
+        return categoryRepository.findMaterialCategoriesByParentId(null);
     }
 }
