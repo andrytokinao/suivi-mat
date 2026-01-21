@@ -18,6 +18,7 @@
   <div *ngIf="step === 1" class="step-content">
     <div class="filters">
       <div class="search-box">
+        <app-menue-category></app-menue-category>
         <input
           type="text"
           [(ngModel)]="searchTerm"
@@ -25,12 +26,7 @@
           class="search-input">
       </div>
 
-      <select [(ngModel)]="selectedCategory" class="category-select">
-        <option [value]="null">Toutes les catégories</option>
-        <option *ngFor="let category of categories" [value]="category.id">
-          {{ category.name }}
-        </option>
-      </select>
+
     </div>
 
     <div class="materials-grid">

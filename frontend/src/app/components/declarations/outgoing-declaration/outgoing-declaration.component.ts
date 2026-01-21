@@ -7,7 +7,8 @@ import {CategoryService} from '../../../services/category.service';
 import {DeclarationService} from '../../../services/declaration.service';
 import {Declaration, OutgoingDeclaration} from '../../../models/declaration';
 import {FormsModule} from '@angular/forms';
-import {NgFor, NgIf} from '@angular/common';
+import {CommonModule, NgFor, NgIf} from '@angular/common';
+import {MenueCategoryComponent} from '../../../shared/menue-category/menue-category.component';
 
 
 
@@ -19,7 +20,11 @@ interface SelectedMaterial {
 @Component({
   selector: 'app-outgoing-declaration',
   standalone:true,
-  imports:[FormsModule,NgFor,NgIf],
+  imports:[
+    FormsModule,
+    CommonModule,
+    MenueCategoryComponent
+  ],
   templateUrl: './outgoing-declaration.component.html',
   styleUrls: ['./outgoing-declaration.component.css']
 })
@@ -28,10 +33,10 @@ export class OutgoingDeclarationComponent implements OnInit {
   materials: Material[] = [];
   categories: MaterialCategory[] = [];
   selectedMaterials: SelectedMaterial[] = [];
-
+  filteredMaterials:Material[] = [];
   // Filtres
   searchTerm: string = '';
-  selectedCategory: number | null = null;
+  selectedCategories = new Set<number>();
 
   // Formulaire étape 2
   usagePurpose: string = '';
@@ -54,20 +59,13 @@ export class OutgoingDeclarationComponent implements OnInit {
     this.categoryService.getCategories().subscribe(categories => {
       this.categories = categories;
     });
+    this.categoryService.selectedCategories$.subscribe(filteredC =>{
+      this.selectedCategories = filteredC;
+      this.applyFilters();
+    })
   }
 
-  get filteredMaterials(): Material[] {
-    return this.materials.filter(material => {
-      const matchesSearch = material.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        material.serialNumber.toLowerCase().includes(this.searchTerm.toLowerCase());
 
-      const matchesCategory = !this.selectedCategory || material.category === this.selectedCategory;
-
-      const isAvailable = material.status === 'AVAILABLE';
-
-      return matchesSearch && matchesCategory && isAvailable;
-    });
-  }
 
   isMaterialSelected(material: Material): boolean {
     return this.selectedMaterials.some(sm => sm.material.id === material.id);
@@ -137,4 +135,15 @@ export class OutgoingDeclarationComponent implements OnInit {
   getCategoryName(categoryId: number): string {
     return this.categories.find(c => c.id === categoryId)?.name || '';
   }
+  applyFilters(): void {
+    this.filteredMaterials = this.materials.filter(m => {
+      const matchSearch = m.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchCategory = this.selectedCategories.size === 0 || this.selectedCategories.has(m.category);
+      const isAvailable = m.status === 'AVAILABLE';
+      return matchSearch && matchCategory && isAvailable;
+    });
+    /*this.page = 1;
+    this.updatePage();*/
+  }
+
 }
