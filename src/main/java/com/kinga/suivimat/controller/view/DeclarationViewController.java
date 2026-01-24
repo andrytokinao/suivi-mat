@@ -1,0 +1,113 @@
+package com.kinga.suivimat.controller.view;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.MaterialMovement;
+import com.kinga.suivimat.services.DeclarationService;
+import com.kinga.suivimat.services.MaterialMovementService;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Controller
+@RequestMapping("/declarations")
+public class DeclarationViewController {
+
+    private final DeclarationService declarationService;
+    private final MaterialMovementService materialMovementService;
+
+    public DeclarationViewController(DeclarationService declarationService,
+                                     MaterialMovementService materialMovementService) {
+        this.declarationService = declarationService;
+        this.materialMovementService = materialMovementService;
+    }
+
+    @GetMapping
+    public String listDeclarations(@RequestParam(required = false) String type, Model model) {
+        List<Declaration> declarations = declarationService.findAll();
+
+        if (type != null && !type.isEmpty()) {
+            declarations = declarations.stream()
+                    .filter(d -> type.equalsIgnoreCase(d.getDeclarationType()))
+                    .toList();
+        }
+
+        model.addAttribute("pageTitle", "Liste des déclarations");
+        model.addAttribute("declarations", declarations);
+        model.addAttribute("type", type);
+        return "declaration-list";
+    }
+
+    @GetMapping("/{id}")
+    public String declarationDetail(@PathVariable Long id, Model model) {
+        Declaration declaration = declarationService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
+
+        List<MaterialMovement> movements = materialMovementService.getMovementsByDeclaration(id);
+
+        model.addAttribute("pageTitle", "Détails de la déclaration #" + id);
+        model.addAttribute("declaration", declaration);
+        model.addAttribute("materialMovements", movements);
+        model.addAttribute("responsableComment", declaration.getNote() != null ? declaration.getNote() : "");
+
+        return "declaration-detail";
+    }
+
+    @PostMapping("/{id}/validate")
+    public String validateSelected(@PathVariable Long id,
+                                   @RequestParam(required = false) List<Long> acceptedMovements,
+                                   @RequestParam(required = false) List<Long> rejectedMovements,
+                                   @RequestParam(required = false) String responsableComment) {
+
+        Declaration declaration = declarationService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
+
+        List<MaterialMovement> movements = materialMovementService.getMovementsByDeclaration(id);
+
+        // Process accepted movements
+        if (acceptedMovements != null) {
+            for (MaterialMovement m : movements) {
+                if (acceptedMovements.contains(m.getId()) &&
+                        (rejectedMovements == null || !rejectedMovements.contains(m.getId()))) {
+                    m.setStatus(MaterialMovement.MovementStatus.VALIDATED);
+                    m.setValidatedBy("responsable.admin"); // TODO: Get authenticated user
+                    m.setValidatedAt(LocalDateTime.now());
+                    materialMovementService.save(m);
+                }
+            }
+        }
+
+        // Process rejected movements
+        if (rejectedMovements != null) {
+            for (MaterialMovement m : movements) {
+                if (rejectedMovements.contains(m.getId())) {
+                    m.setStatus(MaterialMovement.MovementStatus.REJECTED);
+                    m.setValidatedBy("responsable.admin"); // TODO: Get authenticated user
+                    m.setValidatedAt(LocalDateTime.now());
+                    materialMovementService.save(m);
+                }
+            }
+        }
+
+        // Save comment
+        if (responsableComment != null && !responsableComment.trim().isEmpty()) {
+            declaration.setNote(responsableComment);
+            declarationService.save(declaration);
+        }
+
+        return "redirect:/declarations/" + id;
+    }
+
+    @PostMapping("/{id}/comment")
+    public String addComment(@PathVariable Long id, @RequestParam String note) {
+        Declaration declaration = declarationService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
+
+        declaration.setNote(note);
+        declarationService.save(declaration);
+
+        return "redirect:/declarations/" + id;
+    }
+}

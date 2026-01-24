@@ -5,30 +5,26 @@ import com.kinga.suivimat.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
-public class MaterialCategoryService {
+public class MaterialCategoryService extends BaseService<MaterialCategory, Long> {
 
     private final CategoryRepository categoryRepository;
 
     public MaterialCategoryService(CategoryRepository categoryRepository) {
+        super(categoryRepository);
         this.categoryRepository = categoryRepository;
     }
 
-    public List<MaterialCategory> getAllCategories() {
-        return categoryRepository.findAll();
+    public List<MaterialCategory> findByParentId(Long parentId) {
+        return categoryRepository.findMaterialCategoriesByParentId(parentId);
     }
 
-    public Optional<MaterialCategory> getCategoryById(Long id) {
-        return categoryRepository.findById(id);
+    public List<MaterialCategory> findRootCategories() {
+        return categoryRepository.findMaterialCategoriesByParentId(null);
     }
 
-    public MaterialCategory saveCategory(MaterialCategory category) {
-        return categoryRepository.save(category);
-    }
-
-    public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+    public List<MaterialCategory> findByParent(MaterialCategory parent) {
+        return categoryRepository.findByParent(parent);
     }
 }

@@ -1,142 +1,237 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { tap, catchError, finalize } from 'rxjs/operators';
 import { Declaration, OutgoingDeclaration, ReturnDeclaration, MaterialMovement } from '../models/declaration';
 import { DeclarationStatus, MovementStatus } from '../models/enums';
+import { ApiService } from './api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DeclarationService {
-  private declarations: Declaration[] = [
-    {
-      id: 1,
-      declarationType: 'OUTGOING',
-      declarationDate: '2024-03-01',
-      declaredBy: 'Jean Dupont',
-      status: DeclarationStatus.APPROVED,
-      note: 'Utilisation pour le projet X',
-      additionalInfo: 'Bureau 205',
-      validatedBy: 'Admin',
-      movements: [
-        {
-          id: 1,
-          material: 2,
-          materialName: 'Laptop HP ProBook',
-          quantity: 1,
-          condition: 'GOOD',
-          status: MovementStatus.VALIDATED,
-          createdAt: '2024-03-01',
-          createdBy: 'Jean Dupont',
-          validatedAt: '2024-03-01',
-          validatedBy: 'Admin',
-          outgoingDeclaration: 1
-        }
-      ]
-    },
-    {
-      id: 2,
-      declarationType: 'OUTGOING',
-      declarationDate: '2024-03-05',
-      declaredBy: 'Marie Martin',
-      status: DeclarationStatus.PENDING,
-      note: 'Besoin pour la formation',
-      additionalInfo: 'Salle de formation A',
-      movements: [
-        {
-          id: 2,
-          material: 3,
-          materialName: 'Souris Logitech MX',
-          quantity: 5,
-          condition: 'EXCELLENT',
-          status: MovementStatus.PENDING,
-          createdAt: '2024-03-05',
-          createdBy: 'Marie Martin',
-          outgoingDeclaration: 2
-        }
-      ]
-    }
-  ];
-
-  private declarationsSubject = new BehaviorSubject<Declaration[]>(this.declarations);
+  private declarationsSubject = new BehaviorSubject<Declaration[]>([]);
   public declarations$ = this.declarationsSubject.asObservable();
 
-  constructor() {}
+  private isLoading$ = new BehaviorSubject<boolean>(false);
+  public loading$ = this.isLoading$.asObservable();
 
+  private errorSubject = new BehaviorSubject<string | null>(null);
+  public error$ = this.errorSubject.asObservable();
+
+  constructor(private apiService: ApiService) {
+    this.loadDeclarations();
+  }
+
+  /**
+   * Load all declarations from API
+   */
+  loadDeclarations(): void {
+    this.isLoading$.next(true);
+    this.apiService.get<Declaration[]>('/declarations')
+      .pipe(
+        tap(declarations => {
+          this.declarationsSubject.next(declarations);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      )
+      .subscribe();
+  }
+
+  /**
+   * Get all declarations
+   */
   getDeclarations(): Observable<Declaration[]> {
     return this.declarations$;
   }
 
-  getDeclarationById(id: number): Declaration | undefined {
-    return this.declarations.find(d => d.id === id);
+  /**
+   * Get declaration by ID
+   */
+  getDeclarationById(id: number): Observable<Declaration> {
+    return this.apiService.get<Declaration>(`/declarations/${id}`);
   }
 
-  getPendingDeclarations(): Declaration[] {
-    return this.declarations.filter(d => d.status === DeclarationStatus.PENDING);
+  /**
+   * Get declarations by type
+   */
+  getDeclarationsByType(type: 'OUTGOING' | 'RETURN'): Observable<Declaration[]> {
+    return this.apiService.get<Declaration[]>(`/declarations/type/${type}`);
   }
 
-  getOutgoingDeclarationsNotReturned(): OutgoingDeclaration[] {
-    return this.declarations.filter(d =>
-      d.declarationType === 'OUTGOING' &&
-      d.status === DeclarationStatus.APPROVED &&
-      d.movements.some(m => m.status !== MovementStatus.RETURNED)
-    ) as OutgoingDeclaration[];
+  /**
+   * Get declarations by status
+   */
+  getDeclarationsByStatus(status: DeclarationStatus): Observable<Declaration[]> {
+    return this.apiService.get<Declaration[]>(`/declarations/status/${status}`);
   }
 
-  createOutgoingDeclaration(declaration: Omit<OutgoingDeclaration, 'id'>): OutgoingDeclaration {
-    const newDeclaration: OutgoingDeclaration = {
-      ...declaration,
-      id: Math.max(...this.declarations.map(d => d.id), 0) + 1,
-      declarationDate: new Date().toISOString(),
-      status: DeclarationStatus.PENDING
-    };
-    this.declarations.push(newDeclaration);
-    this.declarationsSubject.next(this.declarations);
-    return newDeclaration;
+  /**
+   * Create outgoing declaration
+   */
+  createOutgoingDeclaration(declaration: Omit<OutgoingDeclaration, 'id' | 'declarationDate'>): Observable<OutgoingDeclaration> {
+    this.isLoading$.next(true);
+    return this.apiService.post<OutgoingDeclaration>('/declarations', declaration)
+      .pipe(
+        tap(newDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          this.declarationsSubject.next([...currentDeclarations, newDeclaration]);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
   }
 
-  createReturnDeclaration(declaration: Omit<ReturnDeclaration, 'id'>): ReturnDeclaration {
-    const newDeclaration: ReturnDeclaration = {
-      ...declaration,
-      id: Math.max(...this.declarations.map(d => d.id), 0) + 1,
-      declarationDate: new Date().toISOString(),
-      status: DeclarationStatus.PENDING
-    };
-    this.declarations.push(newDeclaration);
-    this.declarationsSubject.next(this.declarations);
-    return newDeclaration;
+  /**
+   * Create return declaration
+   */
+  createReturnDeclaration(declaration: Omit<ReturnDeclaration, 'id' | 'declarationDate'>): Observable<ReturnDeclaration> {
+    this.isLoading$.next(true);
+    return this.apiService.post<ReturnDeclaration>('/declarations', declaration)
+      .pipe(
+        tap(newDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          this.declarationsSubject.next([...currentDeclarations, newDeclaration]);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
   }
 
-  updateDeclaration(id: number, updates: Partial<Declaration>): void {
-    const index = this.declarations.findIndex(d => d.id === id);
-    if (index !== -1) {
-      this.declarations[index] = { ...this.declarations[index], ...updates };
-      this.declarationsSubject.next(this.declarations);
-    }
+  /**
+   * Update declaration
+   */
+  updateDeclaration(id: number, declaration: Partial<Declaration>): Observable<Declaration> {
+    this.isLoading$.next(true);
+    return this.apiService.put<Declaration>(`/declarations/${id}`, declaration)
+      .pipe(
+        tap(updatedDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          const index = currentDeclarations.findIndex(d => d.id === id);
+          if (index !== -1) {
+            currentDeclarations[index] = updatedDeclaration;
+            this.declarationsSubject.next([...currentDeclarations]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
   }
 
-  validateDeclaration(id: number, validatedBy: string, note?: string): void {
-    this.updateDeclaration(id, {
-      status: DeclarationStatus.APPROVED,
-      validatedBy,
-      note: note || this.declarations.find(d => d.id === id)?.note
-    });
+  /**
+   * Delete declaration
+   */
+  deleteDeclaration(id: number): Observable<void> {
+    this.isLoading$.next(true);
+    return this.apiService.delete<void>(`/declarations/${id}`)
+      .pipe(
+        tap(() => {
+          const currentDeclarations = this.declarationsSubject.value;
+          this.declarationsSubject.next(currentDeclarations.filter(d => d.id !== id));
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
   }
 
-  rejectDeclaration(id: number, validatedBy: string, note: string): void {
-    this.updateDeclaration(id, {
-      status: DeclarationStatus.REJECTED,
-      validatedBy,
-      note
-    });
+  /**
+   * Approve declaration
+   */
+  approveDeclaration(id: number): Observable<Declaration> {
+    this.isLoading$.next(true);
+    return this.apiService.post<Declaration>(`/declarations/${id}/approve`, {})
+      .pipe(
+        tap(updatedDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          const index = currentDeclarations.findIndex(d => d.id === id);
+          if (index !== -1) {
+            currentDeclarations[index] = updatedDeclaration;
+            this.declarationsSubject.next([...currentDeclarations]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
   }
 
-  addNoteToDeclaration(id: number, note: string): void {
-    const declaration = this.declarations.find(d => d.id === id);
-    if (declaration) {
-      const currentNote = declaration.note || '';
-      this.updateDeclaration(id, {
-        note: currentNote + '\n' + note
-      });
-    }
+  /**
+   * Reject declaration
+   */
+  rejectDeclaration(id: number): Observable<Declaration> {
+    this.isLoading$.next(true);
+    return this.apiService.post<Declaration>(`/declarations/${id}/reject`, {})
+      .pipe(
+        tap(updatedDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          const index = currentDeclarations.findIndex(d => d.id === id);
+          if (index !== -1) {
+            currentDeclarations[index] = updatedDeclaration;
+            this.declarationsSubject.next([...currentDeclarations]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Get declaration movements
+   */
+  getDeclarationMovements(declarationId: number): Observable<MaterialMovement[]> {
+    return this.apiService.get<MaterialMovement[]>(`/declarations/${declarationId}/movements`);
+  }
+
+  /**
+   * Get pending declarations
+   */
+  getPendingDeclarations(): Observable<Declaration[]> {
+    return this.getDeclarationsByStatus(DeclarationStatus.PENDING);
+  }
+
+  /**
+   * Get outgoing declarations not returned
+   */
+  getOutgoingDeclarationsNotReturned(): Observable<Declaration[]> {
+    return this.getDeclarationsByType('OUTGOING')
+      .pipe(
+        tap(declarations => {
+          return declarations.filter(d =>
+            d.status === DeclarationStatus.APPROVED &&
+            d.movements.some(m => m.status !== MovementStatus.RETURNED)
+          );
+        })
+      );
+  }
+
+  getLoading(): Observable<boolean> {
+    return this.isLoading$.asObservable();
   }
 }

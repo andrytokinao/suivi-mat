@@ -1,1 +1,99 @@
-<p>category-list works!</p>
+<div class="categories-container">
+
+  <!-- Header -->
+  <div class="header">
+    <h2>Catégories de matériels</h2>
+    <button class="btn btn-primary" (click)="openAddModal()" [disabled]="isLoading">
+      <i class="fa fa-plus"></i> Ajouter une catégorie
+    </button>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="spinner-container" *ngIf="isLoading">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- Categories Content -->
+  <div class="content" *ngIf="!isLoading">
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="categories.length === 0">
+      <p>Aucune catégorie trouvée. Créez-en une nouvelle.</p>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="table-responsive" *ngIf="categories.length > 0">
+      <table class="table table-hover">
+        <thead class="table-light">
+        <tr>
+          <th>Nom</th>
+          <th>Description</th>
+          <th>Parent</th>
+          <th>Sous-catégories</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let category of hierarchyCategories" [class.parent-category]="!category.parent">
+          <td>
+            <strong *ngIf="!category.parent" class="text-primary">
+              {{ category.name }}
+            </strong>
+            <span *ngIf="category.parent">{{ category.name }}</span>
+          </td>
+          <td>{{ category.description }}</td>
+          <td>
+            <span *ngIf="category.parent" class="badge bg-secondary">Parent</span>
+            <span *ngIf="!category.parent" class="badge bg-info">Racine</span>
+          </td>
+          <td>
+              <span class="badge bg-light text-dark">
+                {{ getChildCount(category) }}
+              </span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-warning me-2" (click)="openEditModal(category)" title="Modifier">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteCategory(category)" title="Supprimer">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <!-- Child categories -->
+        <tr *ngFor="let child of hierarchyCategories[0]?.children || []" class="child-category">
+          <td class="ps-5">
+            <i class="fa fa-arrow-right me-2"></i>{{ child.name }}
+          </td>
+          <td>{{ child.description }}</td>
+          <td>
+            <span class="badge bg-secondary">{{ hierarchyCategories[0].name }}</span>
+          </td>
+          <td>
+              <span class="badge bg-light text-dark">
+                {{ getChildCount(child) }}
+              </span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-warning me-2" (click)="openEditModal(child)" title="Modifier">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteCategory(child)" title="Supprimer">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

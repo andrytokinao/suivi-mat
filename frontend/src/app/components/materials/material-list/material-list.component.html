@@ -9,12 +9,12 @@
     <!-- Recherche -->
     <span class="search-box">
       <mat-form-field appearance="outline" class="search-field">
-      <input matInput placeholder="Rechercher " />
+      <input matInput placeholder="Rechercher " [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange(searchTerm)" />
     <button
     mat-icon-button
     matSuffix
-    *ngIf="searchValue"
-    (click)="searchValue=''"
+    *ngIf="searchTerm"
+    (click)="searchTerm=''; onSearchChange('')"
     aria-label="Clear"
   >
     <mat-icon>close</mat-icon>
@@ -23,10 +23,27 @@
       <i class="fa fa-search"></i>
     </span>
 
+    <!-- Bouton Ajouter -->
+    <button class="btn btn-primary btn-sm" (click)="openAddModal()" [disabled]="isLoading">
+      <i class="fa fa-plus"></i> Ajouter
+    </button>
+
+  </div>
+
+  <!-- Message d'erreur -->
+  <div class="alert alert-danger" *ngIf="error">
+    {{ error }}
+  </div>
+
+  <!-- Spinner de chargement -->
+  <div class="spinner-container" *ngIf="isLoading">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
   </div>
 
   <!-- CONTENU PRINCIPAL -->
-  <div class="content-wrapper">
+  <div class="content-wrapper" *ngIf="!isLoading">
 
     <!-- Liste des matériels -->
     <main class="materials-section">
@@ -95,12 +112,23 @@
             </div>
 
           </div>
+
+          <!-- Actions -->
+          <div class="card-footer">
+            <button class="btn btn-sm btn-warning" (click)="openEditModal(m)" title="Modifier">
+              <i class="fa fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" (click)="deleteMaterial(m)" title="Supprimer">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+
         </div>
 
         <!-- Aucun résultat -->
         <div
           class="no-results"
-          *ngIf="filteredMaterials.length === 0"
+          *ngIf="filteredMaterials.length === 0 && !isLoading"
         >
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="1.5">

@@ -55,8 +55,11 @@ public class Material {
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Maintenance> maintenances;
+
+
     @Enumerated(EnumType.STRING)
     private MaterialCondition currentCondition;
+
     public enum MaterialCondition {
         GOOD, DAMAGED, BROKEN, IN_REPAIR
     }

@@ -9,7 +9,16 @@
 </head>
 <body>
 
+<!-- Navbar -->
+<div th:replace="~{layout :: navbar}"></div>
+
 <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Déclaration #<span th:text="${declaration.id}">1</span></h2>
+        <a th:href="@{/declarations}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
 
     <!-- Informations générales -->
     <div class="card mb-4 shadow-sm">
@@ -18,13 +27,22 @@
         </div>
         <div class="card-body row g-3">
             <div class="col-md-6">
+                <label class="fw-bold text-muted">Type de déclaration</label>
+                <p>
+                    <span th:text="${declaration.declarationType}"
+                          th:classappend="${declaration.declarationType == 'SORTIE' ? 'badge bg-primary' : 'badge bg-info'}">
+                        SORTIE
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-6">
                 <label class="fw-bold text-muted">Déclaré par</label>
-                <p><i class="bi bi-person-circle"></i> <span th:text="${declaration.declaredBy}">John Doe</span></p>
+                <p><i class="bi bi-person-circle"></i> <span th:text="${declaration.declaredBy ?: '—'}">John Doe</span></p>
             </div>
             <div class="col-md-6">
                 <label class="fw-bold text-muted">Date de déclaration</label>
                 <p><i class="bi bi-calendar-event"></i>
-                    <span th:text="${#temporals.format(declaration.declarationDate,'dd/MM/yyyy HH:mm')}">07/11/2025 14:30</span>
+                    <span th:text="${declaration.declarationDate != null ? #temporals.format(declaration.declarationDate,'dd/MM/yyyy HH:mm') : '—'}">07/11/2025 14:30</span>
                 </p>
             </div>
             <div class="col-md-6">
@@ -37,14 +55,22 @@
                     </span>
                 </p>
             </div>
+            <div class="col-md-6" th:if="${declaration.validateBy != null}">
+                <label class="fw-bold text-muted">Validé par</label>
+                <p><i class="bi bi-person-check"></i> <span th:text="${declaration.validateBy}">Responsable</span></p>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Informations additionnelles</label>
+                <p th:text="${declaration.additionalInfo ?: 'Aucune'}">Information supplémentaire</p>
+            </div>
         </div>
     </div>
 
     <!-- Liste des mouvements -->
-    <form>
+    <form th:action="@{/declarations/{id}/validate(id=${declaration.id})}" method="post">
         <div class="card mb-4 shadow-sm">
             <div class="card-header"
-                 th:classappend="${isOutgoing != null and isOutgoing ? 'bg-primary text-white' : 'bg-info text-white'}">
+                 th:classappend="${declaration.declarationType == 'SORTIE' ? 'bg-primary text-white' : 'bg-info text-white'}">
                 <h5 class="mb-0">Matériels déclarés</h5>
             </div>
             <div class="card-body">
@@ -56,20 +82,47 @@
                         <th>Catégorie</th>
                         <th>Quantité</th>
                         <th>État</th>
+                        <th>Statut</th>
                         <th>Rejeter</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="m : ${materialMovements}">
-                        <td><input type="checkbox" th:name="'acceptedMovements'" th:value="${m.id}" checked></td>
-                        <td th:text="${m.material.name}">Laptop HP</td>
-                        <td th:text="${m.material.category?.name}">Informatique</td>
+                        <td>
+                            <input type="checkbox"
+                                   name="acceptedMovements"
+                                   th:value="${m.id}"
+                                   th:checked="${m.status.name() == 'VALIDATED'}"
+                                   th:disabled="${m.status.name() == 'VALIDATED' or m.status.name() == 'REJECTED'}">
+                        </td>
+                        <td th:text="${m.material?.name ?: '—'}">Laptop HP</td>
+                        <td th:text="${m.material?.category?.name ?: '—'}">Informatique</td>
                         <td th:text="${m.quantity}">2</td>
-                        <td th:text="${m.condition.name()}">GOOD</td>
-                        <td><input type="checkbox" th:name="'rejectedMovements'" th:value="${m.id}"></td>
+                        <td>
+                            <span th:text="${m.condition ?: 'Non spécifié'}"
+                                  th:classappend="${m.condition != null ?
+                                                  (m.condition.name() == 'GOOD' ? 'badge bg-success' :
+                                                  (m.condition.name() == 'DAMAGED' ? 'badge bg-warning' : 'badge bg-danger')) : 'badge bg-secondary'}">
+                                GOOD
+                            </span>
+                        </td>
+                        <td>
+                            <span th:text="${m.status}"
+                                  th:classappend="${m.status.name() == 'VALIDATED' ? 'badge bg-success' :
+                                                  (m.status.name() == 'REJECTED' ? 'badge bg-danger' : 'badge bg-warning')}">
+                                PENDING
+                            </span>
+                        </td>
+                        <td>
+                            <input type="checkbox"
+                                   name="rejectedMovements"
+                                   th:value="${m.id}"
+                                   th:checked="${m.status.name() == 'REJECTED'}"
+                                   th:disabled="${m.status.name() == 'VALIDATED' or m.status.name() == 'REJECTED'}">
+                        </td>
                     </tr>
-                    <tr th:if="${#lists.isEmpty(materialMovements)}">
-                        <td colspan="6" class="text-center text-muted">
+                    <tr th:if="${materialMovements == null or #lists.isEmpty(materialMovements)}">
+                        <td colspan="7" class="text-center text-muted">
                             <i class="bi bi-inbox"></i> Aucun matériel
                         </td>
                     </tr>
@@ -84,13 +137,16 @@
                 <h5 class="mb-0">Commentaire du responsable</h5>
             </div>
             <div class="card-body">
-            <textarea class="form-control" name="responsableComment" rows="3"
-                      th:text="${responsableComment}"></textarea>
+                <textarea class="form-control"
+                          name="responsableComment"
+                          rows="3"
+                          placeholder="Ajouter un commentaire..."
+                          th:text="${responsableComment}"></textarea>
             </div>
         </div>
 
         <!-- Bouton Valider -->
-        <div class="d-flex justify-content-end mb-4">
+        <div class="d-flex justify-content-end mb-4" th:if="${declaration.status.name() == 'PENDING'}">
             <button type="submit" class="btn btn-success">
                 <i class="bi bi-check-circle"></i> Valider la déclaration
             </button>
@@ -98,6 +154,9 @@
     </form>
 
 </div>
+
+<!-- Scripts -->
+<div th:replace="~{layout :: scripts}"></div>
 
 </body>
 </html>

@@ -5,43 +5,36 @@ import com.kinga.suivimat.repository.DeclarationRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
-public class DeclarationService {
+public class DeclarationService extends BaseService<Declaration, Long> {
 
     private final DeclarationRepository declarationRepository;
 
     public DeclarationService(DeclarationRepository declarationRepository) {
+        super(declarationRepository);
         this.declarationRepository = declarationRepository;
     }
 
-    public List<Declaration> getAllDeclarations() {
-        return declarationRepository.findAll();
+    public List<Declaration> findByDeclaredBy(String declaredBy) {
+        return declarationRepository.findByDeclaredBy(declaredBy);
     }
 
-    public Optional<Declaration> getDeclarationById(Long id) {
-        return declarationRepository.findById(id);
+    public List<Declaration> findByStatus(Declaration.DeclarationStatus status) {
+        return declarationRepository.findByStatus(status);
     }
 
-    public Declaration saveDeclaration(Declaration declaration) {
-        return declarationRepository.save(declaration);
-    }
-
-    public void deleteDeclaration(Long id) {
-        declarationRepository.deleteById(id);
-    }
-
-    // Exemples de méthodes métiers
     public Declaration approveDeclaration(Long id) {
-        Declaration declaration = declarationRepository.findById(id).orElseThrow();
+        Declaration declaration = findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
         declaration.setStatus(Declaration.DeclarationStatus.APPROVED);
-        return declarationRepository.save(declaration);
+        return save(declaration);
     }
 
     public Declaration rejectDeclaration(Long id) {
-        Declaration declaration = declarationRepository.findById(id).orElseThrow();
+        Declaration declaration = findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
         declaration.setStatus(Declaration.DeclarationStatus.REJECTED);
-        return declarationRepository.save(declaration);
+        return save(declaration);
     }
 }

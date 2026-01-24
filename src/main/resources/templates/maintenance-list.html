@@ -1,24 +1,88 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout}">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Liste des matériels - SuiviMat</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
 <body>
-<div th:fragment="content">
-    <h2 class="mb-4">Maintenance</h2>
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Titre</th>
-            <th>Date</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="m : ${maintenances}">
-            <td th:text="${m.id}"></td>
-            <td th:text="${m.title}"></td>
-            <td th:text="${#temporals.format(m.date, 'dd/MM/yyyy HH:mm')}"></td>
-        </tr>
-        </tbody>
-    </table>
+
+<!-- Include Navbar -->
+<div th:replace="~{layout :: navbar}"></div>
+
+<!-- Page Content -->
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Liste des matériels</h2>
+        <button class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau matériel
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Référence</th>
+                    <th>Numéro de série</th>
+                    <th>Catégorie</th>
+                    <th>Statut</th>
+                    <th>Condition</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="material : ${materials}">
+                    <td th:text="${material.id}">1</td>
+                    <td>
+                        <i class="bi bi-box"></i>
+                        <span th:text="${material.name}">Laptop HP</span>
+                    </td>
+                    <td th:text="${material.reference ?: '—'}">REF-001</td>
+                    <td th:text="${material.serialNumber ?: '—'}">SN123456</td>
+                    <td th:text="${material.category?.name ?: '—'}">Informatique</td>
+                    <td>
+                        <span th:text="${material.status}"
+                              th:classappend="${material.status.name() == 'AVAILABLE' ? 'badge bg-success' :
+                                              (material.status.name() == 'IN_USE' ? 'badge bg-primary' :
+                                              (material.status.name() == 'UNDER_MAINTENANCE' ? 'badge bg-warning' :
+                                              (material.status.name() == 'LOST' ? 'badge bg-danger' : 'badge bg-secondary')))}">
+                            AVAILABLE
+                        </span>
+                    </td>
+                    <td>
+                        <span th:text="${material.currentCondition ?: 'Non spécifié'}"
+                              th:classappend="${material.currentCondition != null ?
+                                              (material.currentCondition.name() == 'GOOD' ? 'badge bg-success' :
+                                              (material.currentCondition.name() == 'DAMAGED' ? 'badge bg-warning' :
+                                              (material.currentCondition.name() == 'BROKEN' ? 'badge bg-danger' : 'badge bg-info'))) : 'badge bg-secondary'}">
+                            GOOD
+                        </span>
+                    </td>
+                    <td>
+                        <a th:href="@{/materials/{id}(id=${material.id})}" class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i> Voir
+                        </a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(materials)}">
+                    <td colspan="8" class="text-center text-muted">
+                        <i class="bi bi-inbox"></i> Aucun matériel enregistré
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<!-- Include Scripts -->
+<div th:replace="~{layout :: scripts}"></div>
+
 </body>
 </html>

@@ -1,15 +1,112 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="layout :: content">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Détails Maintenance - SuiviMat</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
 <body>
-<div>
-    <h4>Maintenance #101</h4>
-    <p><strong>Material:</strong> Projector Epson</p>
-    <p><strong>Status:</strong> IN_PROGRESS</p>
-    <p><strong>Description:</strong> Lens replacement and cleaning.</p>
-    <p><strong>Start Date:</strong> 2025-11-05</p>
-    <p><strong>Technician:</strong> Alex Johnson</p>
 
-    <button class="btn btn-success mt-3">Mark as Completed</button>
+<!-- Navbar -->
+<div th:replace="~{layout :: navbar}"></div>
+
+<!-- Page Content -->
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Maintenance #<span th:text="${maintenance.id}">101</span></h2>
+        <a th:href="@{/maintenances}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <!-- Informations générales -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Informations générales</h5>
+        </div>
+        <div class="card-body row g-3">
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Matériel</label>
+                <p><i class="bi bi-gear"></i> <span th:text="${maintenance.material?.name ?: '—'}">Projector Epson</span></p>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Type de maintenance</label>
+                <p><i class="bi bi-tools"></i> <span th:text="${maintenance.maintenanceType ?: '—'}">Réparation</span></p>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Statut</label>
+                <p>
+                    <span th:text="${maintenance.status}"
+                          th:classappend="${maintenance.status.name() == 'COMPLETED' ? 'badge bg-success' :
+                                          (maintenance.status.name() == 'IN_PROGRESS' ? 'badge bg-primary' :
+                                          (maintenance.status.name() == 'PLANNED' ? 'badge bg-warning' : 'badge bg-secondary'))}">
+                        IN_PROGRESS
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Technicien</label>
+                <p><i class="bi bi-person-badge"></i> <span th:text="${maintenance.performedBy ?: '—'}">Alex Johnson</span></p>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Date de début</label>
+                <p><i class="bi bi-calendar-event"></i>
+                    <span th:text="${maintenance.startDate != null ? #temporals.format(maintenance.startDate,'dd/MM/yyyy HH:mm') : '—'}">05/11/2025 10:00</span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <label class="fw-bold text-muted">Date de fin</label>
+                <p><i class="bi bi-calendar-check"></i>
+                    <span th:text="${maintenance.endDate != null ? #temporals.format(maintenance.endDate,'dd/MM/yyyy HH:mm') : 'En cours'}">—</span>
+                </p>
+            </div>
+            <div class="col-md-6" th:if="${maintenance.cost != null}">
+                <label class="fw-bold text-muted">Coût</label>
+                <p><i class="bi bi-currency-dollar"></i> <span th:text="${maintenance.cost}">150.00</span> €</p>
+            </div>
+            <div class="col-md-6" th:if="${maintenance.linkedToCharge != null and maintenance.linkedToCharge}">
+                <label class="fw-bold text-muted">ID Charge</label>
+                <p><i class="bi bi-link-45deg"></i> <span th:text="${maintenance.chargeId ?: '—'}">CHG-2025-001</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Description -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Description</h5>
+        </div>
+        <div class="card-body">
+            <p th:text="${maintenance.description ?: 'Aucune description fournie'}">Lens replacement and cleaning</p>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end gap-2 mb-4">
+        <form th:if="${maintenance.status.name() != 'COMPLETED' and maintenance.status.name() != 'CANCELLED'}"
+              th:action="@{/maintenances/{id}/complete(id=${maintenance.id})}"
+              method="post"
+              style="display: inline;">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Marquer comme terminé
+            </button>
+        </form>
+
+        <form th:if="${maintenance.status.name() != 'CANCELLED' and maintenance.status.name() != 'COMPLETED'}"
+              th:action="@{/maintenances/{id}/cancel(id=${maintenance.id})}"
+              method="post"
+              style="display: inline;">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-x-circle"></i> Annuler
+            </button>
+        </form>
+    </div>
 </div>
+
+<!-- Scripts -->
+<div th:replace="~{layout :: scripts}"></div>
+
 </body>
 </html>

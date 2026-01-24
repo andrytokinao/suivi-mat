@@ -1,1 +1,73 @@
-<p>category-form works!</p>
+<div class="modal-header">
+  <h4 class="modal-title">
+    {{ isEditMode ? 'Modifier la catégorie' : 'Ajouter une nouvelle catégorie' }}
+  </h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
+</div>
+
+<div class="modal-body">
+  <form [formGroup]="form">
+    <!-- Nom -->
+    <div class="mb-3">
+      <label for="name" class="form-label">Nom de la catégorie</label>
+      <input
+        type="text"
+        class="form-control"
+        [class.is-invalid]="submitted && f['name'].invalid"
+        id="name"
+        formControlName="name"
+        placeholder="Ex: Topographie"
+      />
+      <div class="invalid-feedback" *ngIf="submitted && f['name'].errors">
+        <span *ngIf="f['name'].errors['required']">Le nom est requis</span>
+        <span *ngIf="f['name'].errors['minlength']">Au minimum 3 caractères</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="mb-3">
+      <label for="description" class="form-label">Description</label>
+      <textarea
+        class="form-control"
+        [class.is-invalid]="submitted && f['description'].invalid"
+        id="description"
+        formControlName="description"
+        rows="3"
+        placeholder="Décrivez la catégorie..."
+      ></textarea>
+      <div class="invalid-feedback" *ngIf="submitted && f['description'].errors">
+        La description est requise
+      </div>
+    </div>
+
+    <!-- Catégorie parent -->
+    <div class="mb-3">
+      <label for="parent" class="form-label">Catégorie parent (optionnel)</label>
+      <select
+        class="form-select"
+        id="parent"
+        formControlName="parent"
+      >
+        <option [value]="null">Aucune (catégorie racine)</option>
+        <option *ngFor="let cat of parentCategories" [value]="cat.id">
+          {{ cat.name }}
+        </option>
+      </select>
+    </div>
+  </form>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    type="button"
+    class="btn btn-primary"
+    (click)="submit()"
+    [disabled]="isLoading"
+  >
+    <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+    {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
+  </button>
+</div>

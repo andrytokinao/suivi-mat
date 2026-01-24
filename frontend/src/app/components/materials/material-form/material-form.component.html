@@ -1,1 +1,168 @@
-<p>material-form works!</p>
+<div class="modal-header">
+  <h4 class="modal-title">
+    {{ isEditMode ? 'Modifier le matériel' : 'Ajouter un nouveau matériel' }}
+  </h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
+</div>
+
+<div class="modal-body">
+  <form [formGroup]="form">
+    <!-- Nom -->
+    <div class="mb-3">
+      <label for="name" class="form-label">Nom du matériel</label>
+      <input
+        type="text"
+        class="form-control"
+        [class.is-invalid]="submitted && f['name'].invalid"
+        id="name"
+        formControlName="name"
+        placeholder="Ex: Station totale Leica"
+      />
+      <div class="invalid-feedback" *ngIf="submitted && f['name'].errors">
+        <span *ngIf="f['name'].errors['required']">Le nom est requis</span>
+        <span *ngIf="f['name'].errors['minlength']">Au minimum 3 caractères</span>
+      </div>
+    </div>
+
+    <!-- Référence -->
+    <div class="mb-3">
+      <label for="reference" class="form-label">Référence</label>
+      <input
+        type="text"
+        class="form-control"
+        [class.is-invalid]="submitted && f['reference'].invalid"
+        id="reference"
+        formControlName="reference"
+        placeholder="Ex: REF-TOPO-001"
+      />
+      <div class="invalid-feedback" *ngIf="submitted && f['reference'].errors">
+        <span *ngIf="f['reference'].errors['required']">La référence est requise</span>
+      </div>
+    </div>
+
+    <!-- Numéro de série -->
+    <div class="mb-3">
+      <label for="serialNumber" class="form-label">Numéro de série</label>
+      <input
+        type="text"
+        class="form-control"
+        [class.is-invalid]="submitted && f['serialNumber'].invalid"
+        id="serialNumber"
+        formControlName="serialNumber"
+        placeholder="Ex: SN-LEICA-001"
+      />
+      <div class="invalid-feedback" *ngIf="submitted && f['serialNumber'].errors">
+        Le numéro de série est requis
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="mb-3">
+      <label for="description" class="form-label">Description</label>
+      <textarea
+        class="form-control"
+        [class.is-invalid]="submitted && f['description'].invalid"
+        id="description"
+        formControlName="description"
+        rows="3"
+        placeholder="Décrivez le matériel..."
+      ></textarea>
+      <div class="invalid-feedback" *ngIf="submitted && f['description'].errors">
+        La description est requise
+      </div>
+    </div>
+
+    <!-- Catégorie -->
+    <div class="mb-3">
+      <label for="category" class="form-label">Catégorie</label>
+      <select
+        class="form-select"
+        [class.is-invalid]="submitted && f['category'].invalid"
+        id="category"
+        formControlName="category"
+      >
+        <option [value]="null">Sélectionner une catégorie</option>
+        <option *ngFor="let cat of categories" [value]="cat.id">
+          {{ cat.name }}
+        </option>
+      </select>
+      <div class="invalid-feedback" *ngIf="submitted && f['category'].errors">
+        Veuillez sélectionner une catégorie
+      </div>
+    </div>
+
+    <!-- Statut -->
+    <div class="mb-3">
+      <label for="status" class="form-label">Statut</label>
+      <select class="form-select" id="status" formControlName="status">
+        <option *ngFor="let status of statuses" [value]="status">
+          {{ status }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Condition -->
+    <div class="mb-3">
+      <label for="currentCondition" class="form-label">État actuel</label>
+      <select class="form-select" id="currentCondition" formControlName="currentCondition">
+        <option *ngFor="let condition of conditions" [value]="condition">
+          {{ condition }}
+        </option>
+      </select>
+    </div>
+
+    <!-- ID d'achat -->
+    <div class="mb-3">
+      <label for="purchaseId" class="form-label">Référence d'achat</label>
+      <input
+        type="text"
+        class="form-control"
+        id="purchaseId"
+        formControlName="purchaseId"
+        placeholder="Ex: P001"
+      />
+    </div>
+
+    <!-- Quantifiable -->
+    <div class="mb-3">
+      <div class="form-check">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="quantifiable"
+          formControlName="quantifiable"
+        />
+        <label class="form-check-label" for="quantifiable">
+          Peut être quantifié
+        </label>
+      </div>
+    </div>
+
+    <!-- Quantité (si quantifiable) -->
+    <div class="mb-3" *ngIf="f['quantifiable'].value">
+      <label for="quantity" class="form-label">Quantité</label>
+      <input
+        type="number"
+        class="form-control"
+        id="quantity"
+        formControlName="quantity"
+        min="0"
+      />
+    </div>
+  </form>
+</div>
+
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    type="button"
+    class="btn btn-primary"
+    (click)="submit()"
+    [disabled]="isLoading"
+  >
+    <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+    {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
+  </button>
+</div>

@@ -1,0 +1,150 @@
+﻿============================================================
+FILE: CategoryRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.MaterialCategory;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface CategoryRepository extends JpaRepository<MaterialCategory, Long> {
+    List<MaterialCategory> findByParent(MaterialCategory parent);
+    List<MaterialCategory> findMaterialCategoriesByParentId(Long parentId );
+}
+
+
+
+============================================================
+FILE: DeclarationRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.Declaration;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface DeclarationRepository extends JpaRepository<Declaration, Long> {
+    List<Declaration> findByDeclaredBy(String declaredBy);
+    List<Declaration> findByStatus(Declaration.DeclarationStatus status);
+}
+
+
+
+============================================================
+FILE: MaintenanceRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.Maintenance;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface MaintenanceRepository extends JpaRepository<Maintenance, Long> {
+}
+
+
+
+============================================================
+FILE: MaterialMovementRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.MaterialMovement;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface MaterialMovementRepository extends JpaRepository<MaterialMovement, Long> {
+    List<MaterialMovement> findByOutgoingDeclarationId(Long outgoingDeclarationId);
+    List<MaterialMovement> findByReturnDeclarationId(Long returnDeclarationId);
+    List<MaterialMovement> findByOutgoingDeclarationIdOrReturnDeclarationId(Long outgoingDeclarationId, Long returnDeclarationId);
+    List<MaterialMovement> findByStatus(MaterialMovement.MovementStatus status);
+    List<MaterialMovement> findByStatus(MaterialMovement.MovementStatus status, Pageable pageable);
+    List<MaterialMovement> findByMaterialId(Long materialId);
+}
+
+
+
+============================================================
+FILE: MaterialRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.Maintenance;
+import com.kinga.suivimat.entity.Material;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface MaterialRepository extends JpaRepository<Material, Long> {
+    Optional<Material> findBySerialNumber(String serialNumber);
+    List<Material> findByCurrentCondition(Maintenance.MaintenanceStatus condition);
+}
+
+
+
+============================================================
+FILE: OutgoingDeclarationRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.OutgoingDeclaration;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface OutgoingDeclarationRepository extends JpaRepository<OutgoingDeclaration, Long> {
+    List<OutgoingDeclaration> findByValidatedBy(String validatedBy);
+    List<OutgoingDeclaration> findByStatus(Declaration.DeclarationStatus status);
+}
+
+
+
+============================================================
+FILE: ReturnDeclarationRepository.java
+PACKAGE: com.kinga.suivimat.repository
+============================================================
+
+package com.kinga.suivimat.repository;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.ReturnDeclaration;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ReturnDeclarationRepository extends JpaRepository<ReturnDeclaration, Long> {
+    List<ReturnDeclaration> findByVerifiedBy(String verifiedBy);
+    List<ReturnDeclaration> findByStatus(Declaration.DeclarationStatus status);
+}
+
+
+

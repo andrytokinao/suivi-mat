@@ -35,7 +35,7 @@ public class DataInitializer implements CommandLineRunner {
             return;
         // --- Catégories ---
         MaterialCategory topographie = new MaterialCategory();
-        topographie.setName("Topographie");
+        topographie .setName("Topographie");
 
         MaterialCategory numerique = new MaterialCategory();
         numerique.setName("Outils numériques");

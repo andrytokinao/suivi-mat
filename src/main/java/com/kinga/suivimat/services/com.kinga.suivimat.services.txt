@@ -1,0 +1,323 @@
+﻿============================================================
+FILE: BaseService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+// src/main/java/com/company/erp/service/BaseService.java
+// Assuming BaseService is a generic CRUD service. If not provided, here's a placeholder.
+package com.kinga.suivimat.services;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public abstract class BaseService<T, ID> {
+    protected final JpaRepository<T, ID> repository;
+
+    protected BaseService(JpaRepository<T, ID> repository) {
+        this.repository = repository;
+    }
+
+    public T save(T entity) {
+        return repository.save(entity);
+    }
+
+    public Optional<T> findById(ID id) {
+        return repository.findById(id);
+    }
+
+    public List<T> findAll() {
+        return repository.findAll();
+    }
+
+    public void deleteById(ID id) {
+        repository.deleteById(id);
+    }
+}
+
+
+
+============================================================
+FILE: DeclarationService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.repository.DeclarationRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class DeclarationService extends BaseService<Declaration, Long> {
+
+    private final DeclarationRepository declarationRepository;
+
+    public DeclarationService(DeclarationRepository declarationRepository) {
+        super(declarationRepository);
+        this.declarationRepository = declarationRepository;
+    }
+
+    public List<Declaration> findByDeclaredBy(String declaredBy) {
+        return declarationRepository.findByDeclaredBy(declaredBy);
+    }
+
+    public List<Declaration> findByStatus(Declaration.DeclarationStatus status) {
+        return declarationRepository.findByStatus(status);
+    }
+
+    public Declaration approveDeclaration(Long id) {
+        Declaration declaration = findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
+        declaration.setStatus(Declaration.DeclarationStatus.APPROVED);
+        return save(declaration);
+    }
+
+    public Declaration rejectDeclaration(Long id) {
+        Declaration declaration = findById(id)
+                .orElseThrow(() -> new RuntimeException("Declaration not found"));
+        declaration.setStatus(Declaration.DeclarationStatus.REJECTED);
+        return save(declaration);
+    }
+}
+
+
+
+============================================================
+FILE: MaintenanceService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.Maintenance;
+import com.kinga.suivimat.repository.MaintenanceRepository;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MaintenanceService extends BaseService<Maintenance, Long> {
+
+    private final MaintenanceRepository maintenanceRepository;
+
+    public MaintenanceService(MaintenanceRepository maintenanceRepository) {
+        super(maintenanceRepository);
+        this.maintenanceRepository = maintenanceRepository;
+    }
+
+    public Maintenance updateStatus(Long id, Maintenance.MaintenanceStatus status) {
+        Maintenance maintenance = findById(id)
+                .orElseThrow(() -> new RuntimeException("Maintenance not found"));
+        maintenance.setStatus(status);
+        return save(maintenance);
+    }
+}
+
+
+
+============================================================
+FILE: MaterialCategoryService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.MaterialCategory;
+import com.kinga.suivimat.repository.CategoryRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class MaterialCategoryService extends BaseService<MaterialCategory, Long> {
+
+    private final CategoryRepository categoryRepository;
+
+    public MaterialCategoryService(CategoryRepository categoryRepository) {
+        super(categoryRepository);
+        this.categoryRepository = categoryRepository;
+    }
+
+    public List<MaterialCategory> findByParentId(Long parentId) {
+        return categoryRepository.findMaterialCategoriesByParentId(parentId);
+    }
+
+    public List<MaterialCategory> findRootCategories() {
+        return categoryRepository.findMaterialCategoriesByParentId(null);
+    }
+
+    public List<MaterialCategory> findByParent(MaterialCategory parent) {
+        return categoryRepository.findByParent(parent);
+    }
+}
+
+
+
+============================================================
+FILE: MaterialMovementService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.MaterialMovement;
+import com.kinga.suivimat.repository.MaterialMovementRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class MaterialMovementService extends BaseService<MaterialMovement, Long> {
+
+    private final MaterialMovementRepository movementRepository;
+
+    public MaterialMovementService(MaterialMovementRepository movementRepository) {
+        super(movementRepository);
+        this.movementRepository = movementRepository;
+    }
+
+    public List<MaterialMovement> findByMaterialId(Long materialId) {
+        return movementRepository.findByMaterialId(materialId);
+    }
+
+    public List<MaterialMovement> getMovementsByDeclaration(Long declarationId) {
+        return movementRepository.findByOutgoingDeclarationIdOrReturnDeclarationId(
+                declarationId, declarationId);
+    }
+
+    public List<MaterialMovement> findByStatus(MaterialMovement.MovementStatus status) {
+        return movementRepository.findByStatus(status);
+    }
+
+    public List<MaterialMovement> findByStatus(MaterialMovement.MovementStatus status, Pageable pageable) {
+        return movementRepository.findByStatus(status, pageable);
+    }
+
+    public List<MaterialMovement> findByOutgoingDeclarationId(Long outgoingDeclarationId) {
+        return movementRepository.findByOutgoingDeclarationId(outgoingDeclarationId);
+    }
+
+    public List<MaterialMovement> findByReturnDeclarationId(Long returnDeclarationId) {
+        return movementRepository.findByReturnDeclarationId(returnDeclarationId);
+    }
+}
+
+
+
+============================================================
+FILE: MaterialService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.Maintenance;
+import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialCategory;
+import com.kinga.suivimat.repository.CategoryRepository;
+import com.kinga.suivimat.repository.MaterialRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class MaterialService extends BaseService<Material, Long> {
+
+    private final MaterialRepository materialRepository;
+    private final CategoryRepository categoryRepository;
+
+    public MaterialService(MaterialRepository materialRepository, CategoryRepository categoryRepository) {
+        super(materialRepository);
+        this.materialRepository = materialRepository;
+        this.categoryRepository = categoryRepository;
+    }
+
+    public List<MaterialCategory> getRootCategories() {
+        return categoryRepository.findMaterialCategoriesByParentId(null);
+    }
+
+    public Optional<Material> findBySerialNumber(String serialNumber) {
+        return materialRepository.findBySerialNumber(serialNumber);
+    }
+
+    public List<Material> findByCondition(Maintenance.MaintenanceStatus condition) {
+        return materialRepository.findByCurrentCondition(condition);
+    }
+}
+
+
+
+============================================================
+FILE: OutgoingDeclarationService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.OutgoingDeclaration;
+import com.kinga.suivimat.repository.OutgoingDeclarationRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class OutgoingDeclarationService extends BaseService<OutgoingDeclaration, Long> {
+
+    private final OutgoingDeclarationRepository outgoingDeclarationRepository;
+
+    public OutgoingDeclarationService(OutgoingDeclarationRepository outgoingDeclarationRepository) {
+        super(outgoingDeclarationRepository);
+        this.outgoingDeclarationRepository = outgoingDeclarationRepository;
+    }
+
+    public List<OutgoingDeclaration> findByValidatedBy(String validatedBy) {
+        return outgoingDeclarationRepository.findByValidatedBy(validatedBy);
+    }
+
+    public List<OutgoingDeclaration> findByStatus(Declaration.DeclarationStatus status) {
+        return outgoingDeclarationRepository.findByStatus(status);
+    }
+}
+
+
+
+============================================================
+FILE: ReturnDeclarationService.java
+PACKAGE: com.kinga.suivimat.services
+============================================================
+
+package com.kinga.suivimat.services;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.ReturnDeclaration;
+import com.kinga.suivimat.repository.ReturnDeclarationRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class ReturnDeclarationService extends BaseService<ReturnDeclaration, Long> {
+
+    private final ReturnDeclarationRepository returnDeclarationRepository;
+
+    public ReturnDeclarationService(ReturnDeclarationRepository returnDeclarationRepository) {
+        super(returnDeclarationRepository);
+        this.returnDeclarationRepository = returnDeclarationRepository;
+    }
+
+    public List<ReturnDeclaration> findByVerifiedBy(String verifiedBy) {
+        return returnDeclarationRepository.findByVerifiedBy(verifiedBy);
+    }
+
+    public List<ReturnDeclaration> findByStatus(Declaration.DeclarationStatus status) {
+        return returnDeclarationRepository.findByStatus(status);
+    }
+}
+
+
+

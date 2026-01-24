@@ -3,6 +3,7 @@ import {Router, NavigationEnd, RouterOutlet} from '@angular/router';
 import { filter } from 'rxjs/operators';
 import {FormsModule} from '@angular/forms';
 import {SidebarComponent} from './components/layout/sidebar/sidebar.component';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-root',
@@ -12,7 +13,8 @@ import {SidebarComponent} from './components/layout/sidebar/sidebar.component';
   imports: [
     FormsModule,
     RouterOutlet,
-    SidebarComponent
+    SidebarComponent,
+    NgbModule
   ],
 })
 export class AppComponent implements OnInit {

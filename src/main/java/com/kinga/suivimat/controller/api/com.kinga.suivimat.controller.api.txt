@@ -1,0 +1,352 @@
+﻿============================================================
+FILE: BaseController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.services.BaseService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+public abstract class BaseController<T, ID> {
+
+    protected final BaseService<T, ID> service;
+
+    protected BaseController(BaseService<T, ID> service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public List<T> findAll() {
+        return service.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public Optional<T> findById(@PathVariable ID id) {
+        return service.findById(id);
+    }
+
+    @PostMapping
+    public T create(@RequestBody T entity) {
+        return service.save(entity);
+    }
+
+    @PutMapping("/{id}")
+    public T update(@PathVariable ID id, @RequestBody T entity) {
+        return service.save(entity);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable ID id) {
+        service.deleteById(id);
+    }
+}
+
+
+
+============================================================
+FILE: DeclarationController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.MaterialMovement;
+import com.kinga.suivimat.services.DeclarationService;
+import com.kinga.suivimat.services.MaterialMovementService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/declarations")
+public class DeclarationController extends BaseController<Declaration, Long> {
+
+    private final DeclarationService declarationService;
+    private final MaterialMovementService materialMovementService;
+
+    public DeclarationController(DeclarationService declarationService,
+                                 MaterialMovementService materialMovementService) {
+        super(declarationService);
+        this.declarationService = declarationService;
+        this.materialMovementService = materialMovementService;
+    }
+
+    @GetMapping("/type/{type}")
+    public List<Declaration> getByType(@PathVariable String type) {
+        return declarationService.findAll().stream()
+                .filter(d -> type.equalsIgnoreCase(d.getDeclarationType()))
+                .toList();
+    }
+
+    @GetMapping("/{id}/movements")
+    public List<MaterialMovement> getDeclarationMovements(@PathVariable Long id) {
+        return materialMovementService.getMovementsByDeclaration(id);
+    }
+
+    @PostMapping("/{id}/approve")
+    public Declaration approveDeclaration(@PathVariable Long id) {
+        return declarationService.approveDeclaration(id);
+    }
+
+    @PostMapping("/{id}/reject")
+    public Declaration rejectDeclaration(@PathVariable Long id) {
+        return declarationService.rejectDeclaration(id);
+    }
+
+    @GetMapping("/status/{status}")
+    public List<Declaration> getByStatus(@PathVariable Declaration.DeclarationStatus status) {
+        return declarationService.findByStatus(status);
+    }
+}
+
+
+
+============================================================
+FILE: MaintenanceController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.Maintenance;
+import com.kinga.suivimat.services.MaintenanceService;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/maintenances")
+public class MaintenanceController extends BaseController<Maintenance, Long> {
+
+    private final MaintenanceService maintenanceService;
+
+    public MaintenanceController(MaintenanceService maintenanceService) {
+        super(maintenanceService);
+        this.maintenanceService = maintenanceService;
+    }
+
+    @PutMapping("/{id}/status")
+    public Maintenance updateStatus(@PathVariable Long id,
+                                    @RequestParam Maintenance.MaintenanceStatus status) {
+        return maintenanceService.updateStatus(id, status);
+    }
+
+    @PostMapping("/{id}/complete")
+    public Maintenance completeMaintenance(@PathVariable Long id) {
+        return maintenanceService.updateStatus(id, Maintenance.MaintenanceStatus.COMPLETED);
+    }
+
+    @PostMapping("/{id}/cancel")
+    public Maintenance cancelMaintenance(@PathVariable Long id) {
+        return maintenanceService.updateStatus(id, Maintenance.MaintenanceStatus.CANCELLED);
+    }
+}
+
+
+
+============================================================
+FILE: MaterialCategoryController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.MaterialCategory;
+import com.kinga.suivimat.services.MaterialCategoryService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/material-categories")
+public class MaterialCategoryController extends BaseController<MaterialCategory, Long> {
+
+    private final MaterialCategoryService materialCategoryService;
+
+    public MaterialCategoryController(MaterialCategoryService materialCategoryService) {
+        super(materialCategoryService);
+        this.materialCategoryService = materialCategoryService;
+    }
+
+    @GetMapping("/parent/{parentId}")
+    public List<MaterialCategory> getByParentId(@PathVariable Long parentId) {
+        return materialCategoryService.findByParentId(parentId);
+    }
+
+    @GetMapping("/root")
+    public List<MaterialCategory> getRootCategories() {
+        return materialCategoryService.findRootCategories();
+    }
+}
+
+
+
+============================================================
+FILE: MaterialController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialCategory;
+import com.kinga.suivimat.entity.MaterialMovement;
+import com.kinga.suivimat.services.MaterialService;
+import com.kinga.suivimat.services.MaterialMovementService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/materials")
+public class MaterialController extends BaseController<Material, Long> {
+
+    private final MaterialService materialService;
+    private final MaterialMovementService materialMovementService;
+
+    public MaterialController(MaterialService materialService, MaterialMovementService materialMovementService) {
+        super(materialService);
+        this.materialService = materialService;
+        this.materialMovementService = materialMovementService;
+    }
+
+    @GetMapping("/root-categories")
+    public List<MaterialCategory> getRootCategories() {
+        return materialService.getRootCategories();
+    }
+
+    @GetMapping("/{id}/movements")
+    public List<MaterialMovement> getMaterialMovements(@PathVariable Long id) {
+        return materialMovementService.findByMaterialId(id);
+    }
+
+    @GetMapping("/serial/{serialNumber}")
+    public Material findBySerialNumber(@PathVariable String serialNumber) {
+        return materialService.findBySerialNumber(serialNumber)
+                .orElseThrow(() -> new RuntimeException("Material not found with serial: " + serialNumber));
+    }
+}
+
+
+
+============================================================
+FILE: MaterialMovementController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.MaterialMovement;
+import com.kinga.suivimat.services.MaterialMovementService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/material-movements")
+public class MaterialMovementController extends BaseController<MaterialMovement, Long> {
+
+    private final MaterialMovementService materialMovementService;
+
+    public MaterialMovementController(MaterialMovementService materialMovementService) {
+        super(materialMovementService);
+        this.materialMovementService = materialMovementService;
+    }
+
+    @GetMapping("/material/{materialId}")
+    public List<MaterialMovement> getByMaterialId(@PathVariable Long materialId) {
+        return materialMovementService.findByMaterialId(materialId);
+    }
+
+    @GetMapping("/declaration/{declarationId}")
+    public List<MaterialMovement> getByDeclarationId(@PathVariable Long declarationId) {
+        return materialMovementService.getMovementsByDeclaration(declarationId);
+    }
+
+    @GetMapping("/status/{status}")
+    public List<MaterialMovement> getByStatus(@PathVariable MaterialMovement.MovementStatus status) {
+        return materialMovementService.findByStatus(status);
+    }
+}
+
+
+
+============================================================
+FILE: OutgoingDeclarationController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.OutgoingDeclaration;
+import com.kinga.suivimat.services.OutgoingDeclarationService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/outgoing-declarations")
+public class OutgoingDeclarationController extends BaseController<OutgoingDeclaration, Long> {
+
+    private final OutgoingDeclarationService outgoingDeclarationService;
+
+    public OutgoingDeclarationController(OutgoingDeclarationService outgoingDeclarationService) {
+        super(outgoingDeclarationService);
+        this.outgoingDeclarationService = outgoingDeclarationService;
+    }
+
+    @GetMapping("/validated-by/{validatedBy}")
+    public List<OutgoingDeclaration> getByValidatedBy(@PathVariable String validatedBy) {
+        return outgoingDeclarationService.findByValidatedBy(validatedBy);
+    }
+
+    @GetMapping("/status/{status}")
+    public List<OutgoingDeclaration> getByStatus(@PathVariable Declaration.DeclarationStatus status) {
+        return outgoingDeclarationService.findByStatus(status);
+    }
+}
+
+
+
+============================================================
+FILE: ReturnDeclarationController.java
+PACKAGE: com.kinga.suivimat.controller.api
+============================================================
+
+package com.kinga.suivimat.controller.api;
+
+import com.kinga.suivimat.entity.Declaration;
+import com.kinga.suivimat.entity.ReturnDeclaration;
+import com.kinga.suivimat.services.ReturnDeclarationService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/return-declarations")
+public class ReturnDeclarationController extends BaseController<ReturnDeclaration, Long> {
+
+    private final ReturnDeclarationService returnDeclarationService;
+
+    public ReturnDeclarationController(ReturnDeclarationService returnDeclarationService) {
+        super(returnDeclarationService);
+        this.returnDeclarationService = returnDeclarationService;
+    }
+
+    @GetMapping("/verified-by/{verifiedBy}")
+    public List<ReturnDeclaration> getByVerifiedBy(@PathVariable String verifiedBy) {
+        return returnDeclarationService.findByVerifiedBy(verifiedBy);
+    }
+
+    @GetMapping("/status/{status}")
+    public List<ReturnDeclaration> getByStatus(@PathVariable Declaration.DeclarationStatus status) {
+        return returnDeclarationService.findByStatus(status);
+    }
+}
+
+
+

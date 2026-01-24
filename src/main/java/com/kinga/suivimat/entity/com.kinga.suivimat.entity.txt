@@ -1,0 +1,388 @@
+﻿============================================================
+FILE: Declaration.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "declaration_type", discriminatorType = DiscriminatorType.STRING)
+@Data
+public abstract class Declaration {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private LocalDateTime declarationDate;
+    private String declaredBy;
+    private String validateBy;
+    private String note;
+    private DeclarationStatus status;
+    public abstract String getDeclarationType();
+
+    public abstract String getAdditionalInfo();
+    public Declaration() {
+
+    }
+    public enum DeclarationStatus {
+        PENDING, APPROVED, REJECTED
+    }
+}
+
+
+
+============================================================
+FILE: Maintenance.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+public class Maintenance {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JsonBackReference
+    private Material material;
+
+    private String maintenanceType;
+    private String description;
+
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+
+    private BigDecimal cost;
+    private Boolean linkedToCharge;
+    private String chargeId;
+
+    private String performedBy;
+
+    @Enumerated(EnumType.STRING)
+    private MaintenanceStatus status;
+
+
+
+
+    public enum MaintenanceStatus {
+        PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+    }
+}
+
+
+
+============================================================
+FILE: Material.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * SuiviMat – Gestion du matériel d'entreprise
+ * Inclut : matériels, mouvements, déclarations, entretiens et catégories hiérarchiques.
+ */
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+public class Material {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String reference;
+    private String serialNumber;
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    private MaterialState.MaterialStatus status;
+
+    @ManyToOne
+    @JsonBackReference
+    private MaterialCategory category;
+
+    private String purchaseId; // Lien vers gestion des achats
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<MaterialMovement> movements;
+
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<MaterialState> states;
+
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Maintenance> maintenances;
+
+
+    @Enumerated(EnumType.STRING)
+    private MaterialCondition currentCondition;
+
+    public enum MaterialCondition {
+        GOOD, DAMAGED, BROKEN, IN_REPAIR
+    }
+}
+
+
+
+============================================================
+FILE: MaterialCategory.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+public class MaterialCategory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String description;
+
+    @ManyToOne
+    @JsonBackReference
+    private MaterialCategory parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<MaterialCategory> children;
+}
+
+
+
+============================================================
+FILE: MaterialMovement.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialMovement {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JsonBackReference
+    private Material material;
+
+    private int quantity;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime validatedAt;
+
+    private String createdBy;
+    private String validatedBy;
+    private String verifiedBy;
+
+    @Enumerated(EnumType.STRING)
+    private MovementStatus status;
+    private LocalDateTime movementDate;
+    private Material.MaterialCondition condition;
+
+    @ManyToOne
+    @JoinColumn(name = "outgoing_declaration_id")
+    @JsonBackReference
+    private OutgoingDeclaration outgoingDeclaration;
+
+    @ManyToOne
+    @JoinColumn(name = "return_declaration_id")
+    @JsonBackReference
+    private ReturnDeclaration returnDeclaration; // nullable
+
+
+    public enum MovementStatus {
+        PENDING_VALIDATION, VALIDATED, PENDING_VERIFICATION, VERIFIED, REJECTED
+    }
+
+}
+
+
+
+============================================================
+FILE: MaterialState.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Entity
+class MaterialState {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JsonBackReference
+    private Material material;
+
+    @Enumerated(EnumType.STRING)
+    private Material.MaterialCondition state;
+
+    private String description;
+    private String updatedBy;
+    private LocalDateTime date;
+
+    enum MaterialStatus {
+        AVAILABLE, IN_USE, UNDER_MAINTENANCE, LOST, RETIRED
+    }
+}
+
+
+
+============================================================
+FILE: OutgoingDeclaration.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.List;
+
+@Entity
+@DiscriminatorValue("OUTGOING")
+@Data
+@AllArgsConstructor @Builder
+public class OutgoingDeclaration extends Declaration {
+
+    @OneToMany(mappedBy = "outgoingDeclaration", cascade = CascadeType.ALL)
+    private List<MaterialMovement> movements;
+    private String usagePurpose;
+    private String validatedBy;
+
+
+    public OutgoingDeclaration() {
+    }
+
+    @Override
+    public String getDeclarationType() {
+        return "SORTIE";
+    }
+
+    @Override
+    public String getAdditionalInfo() {
+        return usagePurpose;
+    }
+
+}
+
+
+
+============================================================
+FILE: ReturnDeclaration.java
+PACKAGE: com.kinga.suivimat.entity
+============================================================
+
+package com.kinga.suivimat.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Entity
+@DiscriminatorValue("RETURN")
+@Data @NoArgsConstructor
+@AllArgsConstructor @Builder
+public class ReturnDeclaration extends Declaration {
+
+    @OneToMany(mappedBy = "returnDeclaration", cascade = CascadeType.ALL)
+
+    private List<MaterialMovement> movements;
+
+    private LocalDateTime verifiedAt;
+    private String verifiedBy;
+    private String returnConditionNote;
+
+    @Override
+    public String getDeclarationType() {
+        return "RETOUR";
+    }
+
+    @Override
+    public String getAdditionalInfo() {
+        return returnConditionNote;
+    }
+}
+
+
+

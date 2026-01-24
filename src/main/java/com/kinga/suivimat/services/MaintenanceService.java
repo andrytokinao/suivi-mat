@@ -1,40 +1,23 @@
-package     com.kinga.suivimat.services;
+package com.kinga.suivimat.services;
 
 import com.kinga.suivimat.entity.Maintenance;
 import com.kinga.suivimat.repository.MaintenanceRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
-public class MaintenanceService {
+public class MaintenanceService extends BaseService<Maintenance, Long> {
 
     private final MaintenanceRepository maintenanceRepository;
 
     public MaintenanceService(MaintenanceRepository maintenanceRepository) {
+        super(maintenanceRepository);
         this.maintenanceRepository = maintenanceRepository;
     }
 
-    public List<Maintenance> getAllMaintenances() {
-        return maintenanceRepository.findAll();
-    }
-
-    public Optional<Maintenance> getMaintenanceById(Long id) {
-        return maintenanceRepository.findById(id);
-    }
-
-    public Maintenance saveMaintenance(Maintenance maintenance) {
-        return maintenanceRepository.save(maintenance);
-    }
-
-    public void deleteMaintenance(Long id) {
-        maintenanceRepository.deleteById(id);
-    }
-
     public Maintenance updateStatus(Long id, Maintenance.MaintenanceStatus status) {
-        Maintenance maintenance = maintenanceRepository.findById(id).orElseThrow();
+        Maintenance maintenance = findById(id)
+                .orElseThrow(() -> new RuntimeException("Maintenance not found"));
         maintenance.setStatus(status);
-        return maintenanceRepository.save(maintenance);
+        return save(maintenance);
     }
 }
