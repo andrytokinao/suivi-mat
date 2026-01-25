@@ -1,5 +1,5 @@
 <div class="modal-header">
-  <h4 class="modal-title">{{ isEditMode ? 'Modifier la déclaration' : 'Nouvelle déclaration de retour' }}</h4>
+  <h4 class="modal-title">{{ isEditMode ? 'Modifier la déclaration' : 'Nouvelle déclaration de sortie' }}</h4>
   <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
 </div>
 
@@ -21,36 +21,31 @@
       </div>
     </div>
 
-    <!-- Return Condition Note -->
+    <!-- Usage Purpose -->
     <div class="mb-3">
-      <label for="returnConditionNote" class="form-label">État du retour</label>
-      <select
-        class="form-select"
-        [class.is-invalid]="submitted && f['returnConditionNote'].invalid"
-        id="returnConditionNote"
-        formControlName="returnConditionNote"
-      >
-        <option value="">Sélectionner</option>
-        <option value="EXCELLENT">Excellent</option>
-        <option value="BON">Bon</option>
-        <option value="ACCEPTABLE">Acceptable</option>
-        <option value="ENDOMMAGÉ">Endommagé</option>
-      </select>
-      <div class="invalid-feedback" *ngIf="submitted && f['returnConditionNote'].invalid">
-        L'état du retour est requis
+      <label for="usagePurpose" class="form-label">Raison de la sortie</label>
+      <input
+        type="text"
+        class="form-control"
+        [class.is-invalid]="submitted && f['usagePurpose'].invalid"
+        id="usagePurpose"
+        formControlName="usagePurpose"
+        placeholder="Ex: Intervention sur site client"
+      />
+      <div class="invalid-feedback" *ngIf="submitted && f['usagePurpose'].invalid">
+        La raison est requise
       </div>
     </div>
 
     <!-- Materials -->
     <div class="mb-3">
-      <label class="form-label">Matériels retournés</label>
+      <label class="form-label">Matériels à déclarer</label>
       <div class="table-responsive">
         <table class="table table-sm">
           <thead class="table-light">
           <tr>
             <th>Matériel</th>
             <th>Quantité</th>
-            <th>État</th>
             <th></th>
           </tr>
           </thead>
@@ -71,13 +66,6 @@
                 formControlName="quantity"
                 min="1"
               />
-            </td>
-            <td>
-              <select class="form-select form-select-sm" formControlName="condition">
-                <option value="GOOD">Bon</option>
-                <option value="DAMAGED">Endommagé</option>
-                <option value="BROKEN">Cassé</option>
-              </select>
             </td>
             <td>
               <button type="button" class="btn btn-sm btn-danger" (click)="removeMaterial(i)">
@@ -101,7 +89,7 @@
         id="note"
         formControlName="note"
         rows="3"
-        placeholder="Observations sur le retour..."
+        placeholder="Détails supplémentaires..."
       ></textarea>
     </div>
   </form>

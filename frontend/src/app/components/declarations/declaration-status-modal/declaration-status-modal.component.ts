@@ -1,0 +1,124 @@
+import { Component, Input, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { Declaration } from '../../../models/declaration';
+
+@Component({
+  selector: 'app-declaration-status-modal',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  styleUrl: './declaration-status-modal.component.css',
+  template: `
+    <div class="modal-header">
+      <h4 class="modal-title">{{ title }}</h4>
+      <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
+    </div>
+
+    <div class="modal-body">
+      <form [formGroup]="form">
+        <div class="mb-3">
+          <label for="note" class="form-label">{{ noteLabel }}</label>
+          <textarea
+            class="form-control"
+            [class.is-invalid]="submitted && f['note'].invalid"
+            id="note"
+            formControlName="note"
+            rows="4"
+            [placeholder]="notePlaceholder"
+          ></textarea>
+          <div class="invalid-feedback" *ngIf="submitted && f['note'].invalid">
+            {{ noteError }}
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">
+        Annuler
+      </button>
+      <button
+        type="button"
+        [ngClass]="actionClass"
+        (click)="submit()"
+        [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading">{{ actionLabel }}</span>
+        <span *ngIf="isLoading">
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Traitement...
+        </span>
+      </button>
+    </div>
+  `,
+})
+export class DeclarationStatusModalComponent implements OnInit {
+  @Input() declaration!: Declaration;
+  @Input() action: 'approve' | 'reject' = 'approve';
+
+  form!: FormGroup;
+  submitted = false;
+  isLoading = false;
+
+  get title(): string {
+    return this.action === 'approve' ? 'Approuver la déclaration' : 'Rejeter la déclaration';
+  }
+
+  get actionLabel(): string {
+    return this.action === 'approve' ? 'Approuver' : 'Rejeter';
+  }
+
+  get actionClass(): string {
+    return this.action === 'approve' ? 'btn btn-success' : 'btn btn-danger';
+  }
+
+  get noteLabel(): string {
+    return this.action === 'approve' ? 'Observations (optionnel)' : 'Raison du rejet (obligatoire)';
+  }
+
+  get notePlaceholder(): string {
+    return this.action === 'approve'
+      ? 'Ajoutez vos observations...'
+      : 'Expliquez pourquoi cette déclaration est rejetée...';
+  }
+
+  get noteError(): string {
+    return this.action === 'approve' ? 'Longueur maximale: 500 caractères' : 'La raison est obligatoire';
+  }
+
+  get f() {
+    return this.form.controls;
+  }
+
+  constructor(
+    private fb: FormBuilder,
+    public activeModal: NgbActiveModal
+  ) {
+    this.form = this.fb.group({
+      note: ['', [Validators.maxLength(500)]]
+    });
+  }
+
+  ngOnInit(): void {
+    if (this.action === 'reject') {
+      this.form.get('note')?.setValidators([Validators.required, Validators.maxLength(500)]);
+      this.form.get('note')?.updateValueAndValidity();
+    }
+  }
+
+  submit(): void {
+    this.submitted = true;
+
+    if (this.form.invalid) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.activeModal.close(this.form.value);
+  }
+
+  cancel(): void {
+    this.activeModal.dismiss();
+  }
+}

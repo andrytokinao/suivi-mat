@@ -1,3 +1,8 @@
+﻿============================================================
+FILE: category-list.component.ts
+PACKAGE: components.categories.category-list
+============================================================
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MaterialCategory } from '../../../models/category';
 import { CommonModule } from '@angular/common';
@@ -62,12 +67,9 @@ export class CategoryListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (categories) => {
-          // API already returns hierarchical data
-          this.hierarchyCategories = categories;
-          // Flatten for internal use
-          this.categories = this.flattenCategories(categories);
+          this.categories = categories;
+          this.buildHierarchy();
           this.error = null;
-          console.log('Categories loaded:', this.hierarchyCategories);
         },
         error: (err) => {
           this.error = 'Erreur lors du chargement des catégories: ' + err.message;
@@ -76,15 +78,17 @@ export class CategoryListComponent implements OnInit, OnDestroy {
       });
   }
 
-  private flattenCategories(categories: MaterialCategory[]): MaterialCategory[] {
-    let flattened: MaterialCategory[] = [];
-    categories.forEach(cat => {
-      flattened.push(cat);
-      if (cat.children && cat.children.length > 0) {
-        flattened = flattened.concat(this.flattenCategories(cat.children));
-      }
-    });
-    return flattened;
+  private buildHierarchy(): void {
+    const roots = this.categories.filter(c => c.parent === null);
+    this.hierarchyCategories = roots.map(root => this.buildTree(root));
+  }
+
+  private buildTree(category: MaterialCategory): MaterialCategory {
+    const children = this.categories.filter(c => c.parent === category.id);
+    return {
+      ...category,
+      children: children.length > 0 ? children.map(child => this.buildTree(child)) : []
+    };
   }
 
   openAddModal(): void {
@@ -149,10 +153,29 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   }
 
   getChildCount(category: MaterialCategory): number {
-    return category.children ? category.children.length : 0;
+    return this.categories.filter(c => c.parent === category.id).length;
+  }
+
+  getDisplayCategories(): MaterialCategory[] {
+    if (!this.searchTerm) {
+      return this.hierarchyCategories;
+    }
+
+    const searchLower = this.searchTerm.toLowerCase();
+    return this.hierarchyCategories.filter(root =>
+      root.name.toLowerCase().includes(searchLower) ||
+      root.description?.toLowerCase().includes(searchLower) ||
+      (root.children?.some(child =>
+        child.name.toLowerCase().includes(searchLower) ||
+        child.description?.toLowerCase().includes(searchLower)
+      ) ?? false)
+    );
   }
 
   clearError(): void {
     this.error = null;
   }
 }
+
+
+

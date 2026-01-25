@@ -1,3 +1,8 @@
+﻿============================================================
+FILE: sidebar.component.ts
+PACKAGE: components.layout.sidebar
+============================================================
+
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
@@ -81,3 +86,6 @@ export class SidebarComponent {
     return !!item.children && item.children.length > 0;
   }
 }
+
+
+

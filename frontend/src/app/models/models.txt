@@ -1,0 +1,183 @@
+﻿============================================================
+FILE: category.ts
+PACKAGE: models
+============================================================
+
+export interface MaterialCategory {
+  id: number;
+  name: string;
+  description: string;
+  parent: number | null;
+  children?: MaterialCategory[];
+}
+
+
+
+============================================================
+FILE: declaration.ts
+PACKAGE: models
+============================================================
+
+import { DeclarationStatus, MovementStatus, MaterialCondition } from './enums';
+
+export interface Declaration {
+  id: number;
+  declarationType: 'OUTGOING' | 'RETURN';
+  declarationDate: string;
+  declaredBy: string;
+  validateBy: string | null;
+  status: DeclarationStatus;
+  note: string | null;
+  additionalInfo?: string;
+}
+
+export interface OutgoingDeclaration extends Declaration {
+  declarationType: 'OUTGOING';
+  usagePurpose: string;
+  validatedBy: string | null;
+  movements: MaterialMovement[];
+}
+
+export interface ReturnDeclaration extends Declaration {
+  declarationType: 'RETURN';
+  returnConditionNote: string;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  movements: MaterialMovement[];
+}
+
+export interface MaterialMovement {
+  id: number;
+  material: number | null;
+  materialName?: string;
+  quantity: number;
+  condition: MaterialCondition;
+  status: MovementStatus;
+  createdAt: string;
+  createdBy: string;
+  validatedAt: string | null;
+  validatedBy: string | null;
+  verifiedBy: string | null;
+  movementDate: string | null;
+  outgoingDeclaration: number | null;
+  returnDeclaration: number | null;
+  note?: string | null;
+}
+
+export interface OutgoingDeclarationFormData {
+  declaredBy: string;
+  usagePurpose: string;
+  note: string | null;
+  movements: MaterialMovementFormData[];
+}
+
+export interface ReturnDeclarationFormData {
+  declaredBy: string;
+  returnConditionNote: string;
+  verifiedBy: string;
+  note: string | null;
+  movements: MaterialMovementFormData[];
+}
+
+export interface MaterialMovementFormData {
+  material: number;
+  quantity: number;
+  condition: MaterialCondition;
+  note?: string | null;
+}
+
+
+
+============================================================
+FILE: enums.ts
+PACKAGE: models
+============================================================
+
+export enum MaterialStatus {
+  AVAILABLE = 'AVAILABLE',
+  IN_USE = 'IN_USE',
+  UNDER_MAINTENANCE = 'UNDER_MAINTENANCE',
+  LOST = 'LOST',
+  RETIRED = 'RETIRED'
+}
+
+export enum MaterialCondition {
+  GOOD = 'GOOD',
+  DAMAGED = 'DAMAGED',
+  BROKEN = 'BROKEN',
+  IN_REPAIR = 'IN_REPAIR'
+}
+
+export enum DeclarationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED'
+}
+
+export enum MovementStatus {
+  PENDING_VALIDATION = 'PENDING_VALIDATION',
+  VALIDATED = 'VALIDATED',
+  PENDING_VERIFICATION = 'PENDING_VERIFICATION',
+  VERIFIED = 'VERIFIED',
+  REJECTED = 'REJECTED'
+}
+
+export enum MaintenanceStatus {
+  PLANNED = 'PLANNED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+
+
+============================================================
+FILE: material.ts
+PACKAGE: models
+============================================================
+
+import { MaterialStatus, MaterialCondition } from './enums';
+
+export interface Category {
+  id: number;
+  name: string;
+}
+
+export interface Material {
+  id: number;
+  name: string;
+  category: Category | number | null;
+  serialNumber: string | null;
+  reference: string | null;
+  status: MaterialStatus;
+  currentCondition: MaterialCondition | null;
+  description: string | null;
+  purchaseId: string | null;
+  quantifiable: boolean;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface MaterialFormData {
+  name: string;
+  category: number | null;
+  serialNumber: string | null;
+  reference: string | null;
+  status: MaterialStatus;
+  currentCondition: MaterialCondition | null;
+  description: string | null;
+  purchaseId: string | null;
+}
+
+export interface MaterialState {
+  id: number;
+  material: number;
+  state: MaterialCondition;
+  description: string | null;
+  date: string;
+  updatedBy: string;
+}
+
+
+

@@ -1,3 +1,8 @@
+﻿============================================================
+FILE: declaration-list.component.ts
+PACKAGE: components.declarations.declaration-list
+============================================================
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Declaration } from '../../../models/declaration';
 import { CommonModule } from '@angular/common';
@@ -131,38 +136,6 @@ export class DeclarationListComponent implements OnInit, OnDestroy {
     this.updatePage();
   }
 
-  /**
-   * Get page numbers to display in pagination
-   */
-  getPageNumbers(): number[] {
-    const maxPagesToShow = 5;
-    const pages: number[] = [];
-
-    if (this.totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= this.totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const leftOffset = Math.floor(maxPagesToShow / 2);
-      const rightOffset = maxPagesToShow - leftOffset - 1;
-
-      let start = Math.max(1, this.page - leftOffset);
-      let end = Math.min(this.totalPages, this.page + rightOffset);
-
-      if (this.page <= leftOffset) {
-        end = maxPagesToShow;
-      } else if (this.page >= this.totalPages - rightOffset) {
-        start = this.totalPages - maxPagesToShow + 1;
-      }
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-    }
-
-    return pages;
-  }
-
   getStatusBadgeClass(status: DeclarationStatus): string {
     switch (status) {
       case DeclarationStatus.PENDING:
@@ -258,3 +231,6 @@ export class DeclarationListComponent implements OnInit, OnDestroy {
     this.error = null;
   }
 }
+
+
+

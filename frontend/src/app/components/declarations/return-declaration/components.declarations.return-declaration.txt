@@ -1,3 +1,8 @@
+﻿============================================================
+FILE: return-declaration.component.ts
+PACKAGE: components.declarations.return-declaration
+============================================================
+
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
@@ -11,8 +16,8 @@ import { Material } from '../../../models/material';
   selector: 'app-return-declaration-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './return-declaration.component.html',
-  styleUrls: ['./return-declaration.component.css']
+  templateUrl: '../return-declaration-form/return-declaration-form.component.html',
+  styleUrls: ['./return-declaration-form.component.css']
 })
 export class ReturnDeclarationFormComponent implements OnInit {
   @Input() declaration?: ReturnDeclaration;
@@ -111,3 +116,6 @@ export class ReturnDeclarationFormComponent implements OnInit {
     this.activeModal.dismiss();
   }
 }
+
+
+

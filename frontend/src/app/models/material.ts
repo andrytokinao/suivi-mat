@@ -1,28 +1,42 @@
 import { MaterialStatus, MaterialCondition } from './enums';
-import {MaterialCategory} from './category';
+
+export interface Category {
+  id: number;
+  name: string;
+}
 
 export interface Material {
   id: number;
   name: string;
-  category: number;
-  categoryObj?: MaterialCategory;
-  serialNumber: string;
-  reference: string;
+  category: Category | number | null;
+  serialNumber: string | null;
+  reference: string | null;
   status: MaterialStatus;
-  currentCondition: MaterialCondition;
-  description: string;
-  purchaseId: string;
-  createdAt: string;
-  updatedAt?: string;
+  currentCondition: MaterialCondition | null;
+  description: string | null;
+  purchaseId: string | null;
   quantifiable: boolean;
-  quantity?: number;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface MaterialFormData {
+  name: string;
+  category: number | null;
+  serialNumber: string | null;
+  reference: string | null;
+  status: MaterialStatus;
+  currentCondition: MaterialCondition | null;
+  description: string | null;
+  purchaseId: string | null;
 }
 
 export interface MaterialState {
   id: number;
   material: number;
   state: MaterialCondition;
-  description: string;
+  description: string | null;
   date: string;
   updatedBy: string;
 }

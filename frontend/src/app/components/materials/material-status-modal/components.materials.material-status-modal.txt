@@ -1,0 +1,128 @@
+﻿============================================================
+FILE: material-status-modal.component.ts
+PACKAGE: components.materials.material-status-modal
+============================================================
+
+import { Component, Input, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { Material } from '../../../models/material';
+import { MaterialStatus, MaterialCondition } from '../../../models/enums';
+
+@Component({
+  selector: 'app-material-status-modal',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './material-status-modal.component.html',
+  styleUrls: ['./material-status-modal.component.css']
+})
+export class MaterialStatusModalComponent implements OnInit {
+  @Input() material!: Material;
+  @Input() changeType: 'status' | 'condition' = 'status';
+
+  form!: FormGroup;
+  submitted = false;
+  isLoading = false;
+
+  statuses = Object.values(MaterialStatus);
+  conditions = Object.values(MaterialCondition);
+
+  constructor(
+    private fb: FormBuilder,
+    public activeModal: NgbActiveModal
+  ) {
+    this.initForm();
+  }
+
+  ngOnInit(): void {
+    this.setupValidators();
+    this.setCurrentValues();
+  }
+
+  initForm(): void {
+    this.form = this.fb.group({
+      status: [''],
+      currentCondition: [''],
+      notes: ['', Validators.maxLength(500)]
+    });
+  }
+
+  setupValidators(): void {
+    if (this.changeType === 'status') {
+      this.form.get('status')?.setValidators([Validators.required]);
+      this.form.get('currentCondition')?.clearValidators();
+    } else {
+      this.form.get('currentCondition')?.setValidators([Validators.required]);
+      this.form.get('status')?.clearValidators();
+    }
+    this.form.updateValueAndValidity();
+  }
+
+  setCurrentValues(): void {
+    if (this.material) {
+      if (this.changeType === 'status') {
+        this.form.patchValue({ status: this.material.status });
+      } else {
+        this.form.patchValue({ currentCondition: this.material.currentCondition });
+      }
+    }
+  }
+
+  get title(): string {
+    return this.changeType === 'status'
+      ? 'Changer le statut du matériel'
+      : "Changer l'état du matériel";
+  }
+
+  get f() {
+    return this.form.controls;
+  }
+
+  getStatusLabel(status: MaterialStatus): string {
+    const labels: Record<MaterialStatus, string> = {
+      [MaterialStatus.AVAILABLE]: 'Disponible',
+      [MaterialStatus.IN_USE]: 'En utilisation',
+      [MaterialStatus.UNDER_MAINTENANCE]: 'En maintenance',
+      [MaterialStatus.LOST]: 'Perdu',
+      [MaterialStatus.RETIRED]: 'Retiré'
+    };
+    return labels[status] || status;
+  }
+
+  getConditionLabel(condition: MaterialCondition): string {
+    const labels: Record<MaterialCondition, string> = {
+      [MaterialCondition.GOOD]: 'Bon état',
+      [MaterialCondition.DAMAGED]: 'Endommagé',
+      [MaterialCondition.BROKEN]: 'Cassé',
+      [MaterialCondition.IN_REPAIR]: 'En réparation'
+    };
+    return labels[condition] || condition;
+  }
+
+  submit(): void {
+    this.submitted = true;
+
+    const controlToCheck = this.changeType === 'status' ? 'status' : 'currentCondition';
+    if (!this.form.get(controlToCheck)?.valid) {
+      return;
+    }
+
+    this.isLoading = true;
+
+    // Return the result
+    const result = {
+      ...this.form.value,
+      type: this.changeType
+    };
+
+    this.activeModal.close(result);
+  }
+
+  cancel(): void {
+    this.activeModal.dismiss();
+  }
+}
+
+
+

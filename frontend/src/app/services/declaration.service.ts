@@ -1,7 +1,14 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { tap, catchError, finalize } from 'rxjs/operators';
-import { Declaration, OutgoingDeclaration, ReturnDeclaration, MaterialMovement } from '../models/declaration';
+import { tap, catchError, finalize, map } from 'rxjs/operators';
+import {
+  Declaration,
+  OutgoingDeclaration,
+  ReturnDeclaration,
+  MaterialMovement,
+  OutgoingDeclarationFormData,
+  ReturnDeclarationFormData
+} from '../models/declaration';
 import { DeclarationStatus, MovementStatus } from '../models/enums';
 import { ApiService } from './api.service';
 
@@ -22,9 +29,6 @@ export class DeclarationService {
     this.loadDeclarations();
   }
 
-  /**
-   * Load all declarations from API
-   */
   loadDeclarations(): void {
     this.isLoading$.next(true);
     this.apiService.get<Declaration[]>('/declarations')
@@ -42,40 +46,41 @@ export class DeclarationService {
       .subscribe();
   }
 
-  /**
-   * Get all declarations
-   */
   getDeclarations(): Observable<Declaration[]> {
     return this.declarations$;
   }
 
-  /**
-   * Get declaration by ID
-   */
   getDeclarationById(id: number): Observable<Declaration> {
     return this.apiService.get<Declaration>(`/declarations/${id}`);
   }
 
-  /**
-   * Get declarations by type
-   */
   getDeclarationsByType(type: 'OUTGOING' | 'RETURN'): Observable<Declaration[]> {
     return this.apiService.get<Declaration[]>(`/declarations/type/${type}`);
   }
 
-  /**
-   * Get declarations by status
-   */
   getDeclarationsByStatus(status: DeclarationStatus): Observable<Declaration[]> {
     return this.apiService.get<Declaration[]>(`/declarations/status/${status}`);
   }
 
-  /**
-   * Create outgoing declaration
-   */
-  createOutgoingDeclaration(declaration: Omit<OutgoingDeclaration, 'id' | 'declarationDate'>): Observable<OutgoingDeclaration> {
+  createOutgoingDeclaration(declarationData: OutgoingDeclarationFormData): Observable<OutgoingDeclaration> {
     this.isLoading$.next(true);
-    return this.apiService.post<OutgoingDeclaration>('/declarations', declaration)
+
+    const payload = {
+      declaredBy: declarationData.declaredBy,
+      usagePurpose: declarationData.usagePurpose,
+      note: declarationData.note,
+      status: DeclarationStatus.PENDING,
+      movements: declarationData.movements.map(m => ({
+        material: { id: m.material },
+        quantity: m.quantity,
+        condition: m.condition,
+        status: MovementStatus.PENDING_VALIDATION,
+        createdBy: declarationData.declaredBy,
+        note: m.note
+      }))
+    };
+
+    return this.apiService.post<OutgoingDeclaration>('/declarations', payload)
       .pipe(
         tap(newDeclaration => {
           const currentDeclarations = this.declarationsSubject.value;
@@ -90,12 +95,26 @@ export class DeclarationService {
       );
   }
 
-  /**
-   * Create return declaration
-   */
-  createReturnDeclaration(declaration: Omit<ReturnDeclaration, 'id' | 'declarationDate'>): Observable<ReturnDeclaration> {
+  createReturnDeclaration(declarationData: ReturnDeclarationFormData): Observable<ReturnDeclaration> {
     this.isLoading$.next(true);
-    return this.apiService.post<ReturnDeclaration>('/declarations', declaration)
+
+    const payload = {
+      declaredBy: declarationData.declaredBy,
+      returnConditionNote: declarationData.returnConditionNote,
+      verifiedBy: declarationData.verifiedBy,
+      note: declarationData.note,
+      status: DeclarationStatus.PENDING,
+      movements: declarationData.movements.map(m => ({
+        material: { id: m.material },
+        quantity: m.quantity,
+        condition: m.condition,
+        status: MovementStatus.PENDING_VERIFICATION,
+        createdBy: declarationData.declaredBy,
+        note: m.note
+      }))
+    };
+
+    return this.apiService.post<ReturnDeclaration>('/declarations', payload)
       .pipe(
         tap(newDeclaration => {
           const currentDeclarations = this.declarationsSubject.value;
@@ -110,9 +129,6 @@ export class DeclarationService {
       );
   }
 
-  /**
-   * Update declaration
-   */
   updateDeclaration(id: number, declaration: Partial<Declaration>): Observable<Declaration> {
     this.isLoading$.next(true);
     return this.apiService.put<Declaration>(`/declarations/${id}`, declaration)
@@ -134,9 +150,6 @@ export class DeclarationService {
       );
   }
 
-  /**
-   * Delete declaration
-   */
   deleteDeclaration(id: number): Observable<void> {
     this.isLoading$.next(true);
     return this.apiService.delete<void>(`/declarations/${id}`)
@@ -154,12 +167,11 @@ export class DeclarationService {
       );
   }
 
-  /**
-   * Approve declaration
-   */
-  approveDeclaration(id: number): Observable<Declaration> {
+  // Fixed method name
+  approveDeclaration(id: number, notes?: string): Observable<Declaration> {
     this.isLoading$.next(true);
-    return this.apiService.post<Declaration>(`/declarations/${id}/approve`, {})
+    const payload = notes ? { note: notes } : {};
+    return this.apiService.post<Declaration>(`/declarations/${id}/approve`, payload)
       .pipe(
         tap(updatedDeclaration => {
           const currentDeclarations = this.declarationsSubject.value;
@@ -178,12 +190,11 @@ export class DeclarationService {
       );
   }
 
-  /**
-   * Reject declaration
-   */
-  rejectDeclaration(id: number): Observable<Declaration> {
+  // Fixed method name
+  rejectDeclaration(id: number, reason?: string): Observable<Declaration> {
     this.isLoading$.next(true);
-    return this.apiService.post<Declaration>(`/declarations/${id}/reject`, {})
+    const payload = reason ? { note: reason } : {};
+    return this.apiService.post<Declaration>(`/declarations/${id}/reject`, payload)
       .pipe(
         tap(updatedDeclaration => {
           const currentDeclarations = this.declarationsSubject.value;
@@ -202,33 +213,33 @@ export class DeclarationService {
       );
   }
 
-  /**
-   * Get declaration movements
-   */
   getDeclarationMovements(declarationId: number): Observable<MaterialMovement[]> {
     return this.apiService.get<MaterialMovement[]>(`/declarations/${declarationId}/movements`);
   }
 
-  /**
-   * Get pending declarations
-   */
   getPendingDeclarations(): Observable<Declaration[]> {
     return this.getDeclarationsByStatus(DeclarationStatus.PENDING);
   }
 
-  /**
-   * Get outgoing declarations not returned
-   */
+  getOutgoingDeclarations(): Observable<OutgoingDeclaration[]> {
+    return this.getDeclarationsByType('OUTGOING') as Observable<OutgoingDeclaration[]>;
+  }
+
+  getReturnDeclarations(): Observable<ReturnDeclaration[]> {
+    return this.getDeclarationsByType('RETURN') as Observable<ReturnDeclaration[]>;
+  }
+
   getOutgoingDeclarationsNotReturned(): Observable<Declaration[]> {
-    return this.getDeclarationsByType('OUTGOING')
-      .pipe(
-        tap(declarations => {
-          return declarations.filter(d =>
-            d.status === DeclarationStatus.APPROVED &&
-            d.movements.some(m => m.status !== MovementStatus.RETURNED)
-          );
-        })
-      );
+    return this.getDeclarationsByType('OUTGOING').pipe(
+      map(declarations =>
+        declarations.filter(d =>
+          d.status === DeclarationStatus.APPROVED &&
+          (d as OutgoingDeclaration).movements?.some(m =>
+            m.status !== MovementStatus.VERIFIED
+          )
+        )
+      )
+    );
   }
 
   getLoading(): Observable<boolean> {

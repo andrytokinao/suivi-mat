@@ -1,34 +1,42 @@
 <div class="sidebar">
+  <!-- Header -->
   <div class="sidebar-header">
     <h2>SuiviMat</h2>
     <p class="text-sm text-gray-400">Gestion de Matériel</p>
   </div>
 
+  <!-- Navigation Menu -->
   <nav class="sidebar-nav">
     <div *ngFor="let item of menuItems" class="menu-item-group">
+      <!-- Main Menu Item -->
       <div
         class="menu-item"
-        [class.has-children]="item.children"
-        (click)="item.children ? toggleExpand(item.label) : navigate(item.route)">
-        <span class="menu-icon">📦</span>
+        [class.has-children]="hasChildren(item)"
+        [class.expanded]="isExpanded(item.label)"
+        (click)="hasChildren(item) ? toggleExpand(item.label) : navigate(item.route)">
+        <span class="menu-icon">{{ item.icon }}</span>
         <span class="menu-label">{{ item.label }}</span>
-        <span *ngIf="item.children" class="expand-icon">
+        <span *ngIf="hasChildren(item)" class="expand-icon">
           {{ isExpanded(item.label) ? '▼' : '▶' }}
         </span>
       </div>
 
-      <div *ngIf="item.children && isExpanded(item.label)" class="submenu">
+      <!-- Submenu Items -->
+      <div
+        *ngIf="hasChildren(item) && isExpanded(item.label)"
+        class="submenu">
         <div
           *ngFor="let child of item.children"
           class="submenu-item"
           (click)="navigate(child.route)">
-          <span class="submenu-icon">•</span>
+          <span class="submenu-icon">{{ child.icon }}</span>
           <span class="submenu-label">{{ child.label }}</span>
         </div>
       </div>
     </div>
   </nav>
 
+  <!-- Footer -->
   <div class="sidebar-footer">
     <div class="user-info">
       <span class="user-icon">👤</span>

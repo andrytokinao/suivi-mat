@@ -1,0 +1,819 @@
+﻿============================================================
+FILE: api.service.ts
+PACKAGE: services
+============================================================
+
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { catchError, tap, finalize } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+
+export interface ApiResponse<T> {
+  data?: T;
+  message?: string;
+  status?: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ApiService {
+  protected apiUrl = environment.apiUrl;
+  protected isLoading$ = new BehaviorSubject<boolean>(false);
+
+  constructor(protected http: HttpClient) {}
+
+  /**
+   * GET request
+   */
+  get<T>(endpoint: string, params?: any): Observable<T> {
+    this.isLoading$.next(true);
+    return this.http.get<T>(`${this.apiUrl}${endpoint}`, { params })
+      .pipe(
+        finalize(() => this.isLoading$.next(false)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * POST request
+   */
+  post<T>(endpoint: string, body: any): Observable<T> {
+    this.isLoading$.next(true);
+    return this.http.post<T>(`${this.apiUrl}${endpoint}`, body)
+      .pipe(
+        finalize(() => this.isLoading$.next(false)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * PUT request
+   */
+  put<T>(endpoint: string, body: any): Observable<T> {
+    this.isLoading$.next(true);
+    return this.http.put<T>(`${this.apiUrl}${endpoint}`, body)
+      .pipe(
+        finalize(() => this.isLoading$.next(false)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * DELETE request
+   */
+  delete<T>(endpoint: string): Observable<T> {
+    this.isLoading$.next(true);
+    return this.http.delete<T>(`${this.apiUrl}${endpoint}`)
+      .pipe(
+        finalize(() => this.isLoading$.next(false)),
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Handle errors
+   */
+  protected handleError(error: HttpErrorResponse) {
+    let errorMessage = 'Une erreur est survenue';
+
+    if (error.error instanceof ErrorEvent) {
+      // Client-side error
+      errorMessage = error.error.message;
+    } else {
+      // Server-side error
+      errorMessage = error.error?.message || error.message || errorMessage;
+    }
+
+    console.error('API Error:', errorMessage, error);
+    return throwError(() => new Error(errorMessage));
+  }
+
+  getIsLoading(): Observable<boolean> {
+    return this.isLoading$.asObservable();
+  }
+}
+
+
+
+============================================================
+FILE: category.service.spec.ts
+PACKAGE: services
+============================================================
+
+import { TestBed } from '@angular/core/testing';
+
+import { CategoryService } from './category.service';
+
+describe('CategoryService', () => {
+  let service: CategoryService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(CategoryService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+
+
+
+============================================================
+FILE: category.service.ts
+PACKAGE: services
+============================================================
+
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { tap, catchError, finalize } from 'rxjs/operators';
+import { MaterialCategory } from '../models/category';
+import { ApiService } from './api.service';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CategoryService {
+  private categoriesSubject = new BehaviorSubject<MaterialCategory[]>([]);
+  public categories$ = this.categoriesSubject.asObservable();
+
+  protected selectedCategoriesSubject = new BehaviorSubject<Set<number>>(new Set<number>());
+  selectedCategories$ = this.selectedCategoriesSubject.asObservable();
+
+  private isLoading$ = new BehaviorSubject<boolean>(false);
+  public loading$ = this.isLoading$.asObservable();
+
+  private errorSubject = new BehaviorSubject<string | null>(null);
+  public error$ = this.errorSubject.asObservable();
+
+  constructor(private apiService: ApiService) {
+    this.loadCategories();
+  }
+
+  /**
+   * Load all categories from API
+   */
+  loadCategories(): void {
+    this.isLoading$.next(true);
+    this.apiService.get<MaterialCategory[]>('/material-categories')
+      .pipe(
+        tap(categories => {
+          this.categoriesSubject.next(categories);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      )
+      .subscribe();
+  }
+
+  /**
+   * Get all categories
+   */
+  getCategories(): Observable<MaterialCategory[]> {
+    return this.categories$;
+  }
+
+  /**
+   * Get category by ID
+   */
+  getCategoryById(id: number): Observable<MaterialCategory> {
+    return this.apiService.get<MaterialCategory>(`/material-categories/${id}`);
+  }
+
+  /**
+   * Get root categories
+   */
+  getRootCategories(): Observable<MaterialCategory[]> {
+    return this.apiService.get<MaterialCategory[]>('/material-categories/root');
+  }
+
+  /**
+   * Get child categories
+   */
+  getChildCategories(parentId: number): Observable<MaterialCategory[]> {
+    return this.apiService.get<MaterialCategory[]>(`/material-categories/parent/${parentId}`);
+  }
+
+  /**
+   * Create new category
+   */
+  addCategory(category: Omit<MaterialCategory, 'id'>): Observable<MaterialCategory> {
+    this.isLoading$.next(true);
+    return this.apiService.post<MaterialCategory>('/material-categories', category)
+      .pipe(
+        tap(newCategory => {
+          const currentCategories = this.categoriesSubject.value;
+          this.categoriesSubject.next([...currentCategories, newCategory]);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Update category
+   */
+  updateCategory(id: number, category: Partial<MaterialCategory>): Observable<MaterialCategory> {
+    this.isLoading$.next(true);
+    return this.apiService.put<MaterialCategory>(`/material-categories/${id}`, category)
+      .pipe(
+        tap(updatedCategory => {
+          const currentCategories = this.categoriesSubject.value;
+          const index = currentCategories.findIndex(c => c.id === id);
+          if (index !== -1) {
+            currentCategories[index] = updatedCategory;
+            this.categoriesSubject.next([...currentCategories]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Delete category
+   */
+  deleteCategory(id: number): Observable<void> {
+    this.isLoading$.next(true);
+    return this.apiService.delete<void>(`/material-categories/${id}`)
+      .pipe(
+        tap(() => {
+          const currentCategories = this.categoriesSubject.value;
+          this.categoriesSubject.next(currentCategories.filter(c => c.id !== id));
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Build category hierarchy
+   */
+  getCategoryHierarchy(): Observable<MaterialCategory[]> {
+    return this.getRootCategories()
+      .pipe(
+        tap(roots => {
+          // Build tree for each root
+          const hierarchies = roots.map(root => this.buildCategoryTree(root));
+          return hierarchies;
+        })
+      );
+  }
+
+  /**
+   * Build category tree recursively
+   */
+  private buildCategoryTree(parent: MaterialCategory): MaterialCategory {
+    const children = this.categoriesSubject.value.filter(c => c.parent === parent.id);
+    return {
+      ...parent,
+      children: children.length > 0 ? children.map(child => this.buildCategoryTree(child)) : []
+    };
+  }
+
+  /**
+   * Toggle category selection filter
+   */
+  toggleCategory(id: number): void {
+    const selectedCategories = this.selectedCategoriesSubject.value;
+    selectedCategories.has(id)
+      ? selectedCategories.delete(id)
+      : selectedCategories.add(id);
+    this.selectedCategoriesSubject.next(new Set(selectedCategories));
+  }
+
+  /**
+   * Clear all filters
+   */
+  clearAllFilters(): void {
+    this.selectedCategoriesSubject.next(new Set<number>());
+  }
+
+  getLoading(): Observable<boolean> {
+    return this.isLoading$.asObservable();
+  }
+}
+
+
+
+============================================================
+FILE: declaration.service.spec.ts
+PACKAGE: services
+============================================================
+
+import { TestBed } from '@angular/core/testing';
+
+import { DeclarationService } from './declaration.service';
+
+describe('DeclarationService', () => {
+  let service: DeclarationService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(DeclarationService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+
+
+
+============================================================
+FILE: declaration.service.ts
+PACKAGE: services
+============================================================
+
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { tap, catchError, finalize, map } from 'rxjs/operators';
+import {
+  Declaration,
+  OutgoingDeclaration,
+  ReturnDeclaration,
+  MaterialMovement,
+  OutgoingDeclarationFormData,
+  ReturnDeclarationFormData
+} from '../models/declaration';
+import { DeclarationStatus, MovementStatus } from '../models/enums';
+import { ApiService } from './api.service';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class DeclarationService {
+  private declarationsSubject = new BehaviorSubject<Declaration[]>([]);
+  public declarations$ = this.declarationsSubject.asObservable();
+
+  private isLoading$ = new BehaviorSubject<boolean>(false);
+  public loading$ = this.isLoading$.asObservable();
+
+  private errorSubject = new BehaviorSubject<string | null>(null);
+  public error$ = this.errorSubject.asObservable();
+
+  constructor(private apiService: ApiService) {
+    this.loadDeclarations();
+  }
+
+  loadDeclarations(): void {
+    this.isLoading$.next(true);
+    this.apiService.get<Declaration[]>('/declarations')
+      .pipe(
+        tap(declarations => {
+          this.declarationsSubject.next(declarations);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      )
+      .subscribe();
+  }
+
+  getDeclarations(): Observable<Declaration[]> {
+    return this.declarations$;
+  }
+
+  getDeclarationById(id: number): Observable<Declaration> {
+    return this.apiService.get<Declaration>(`/declarations/${id}`);
+  }
+
+  getDeclarationsByType(type: 'OUTGOING' | 'RETURN'): Observable<Declaration[]> {
+    return this.apiService.get<Declaration[]>(`/declarations/type/${type}`);
+  }
+
+  getDeclarationsByStatus(status: DeclarationStatus): Observable<Declaration[]> {
+    return this.apiService.get<Declaration[]>(`/declarations/status/${status}`);
+  }
+
+  createOutgoingDeclaration(declarationData: OutgoingDeclarationFormData): Observable<OutgoingDeclaration> {
+    this.isLoading$.next(true);
+
+    const payload = {
+      declaredBy: declarationData.declaredBy,
+      usagePurpose: declarationData.usagePurpose,
+      note: declarationData.note,
+      status: DeclarationStatus.PENDING,
+      movements: declarationData.movements.map(m => ({
+        material: { id: m.material },
+        quantity: m.quantity,
+        condition: m.condition,
+        status: MovementStatus.PENDING_VALIDATION,
+        createdBy: declarationData.declaredBy,
+        note: m.note
+      }))
+    };
+
+    return this.apiService.post<OutgoingDeclaration>('/declarations', payload)
+      .pipe(
+        tap(newDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          this.declarationsSubject.next([...currentDeclarations, newDeclaration]);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  createReturnDeclaration(declarationData: ReturnDeclarationFormData): Observable<ReturnDeclaration> {
+    this.isLoading$.next(true);
+
+    const payload = {
+      declaredBy: declarationData.declaredBy,
+      returnConditionNote: declarationData.returnConditionNote,
+      verifiedBy: declarationData.verifiedBy,
+      note: declarationData.note,
+      status: DeclarationStatus.PENDING,
+      movements: declarationData.movements.map(m => ({
+        material: { id: m.material },
+        quantity: m.quantity,
+        condition: m.condition,
+        status: MovementStatus.PENDING_VERIFICATION,
+        createdBy: declarationData.declaredBy,
+        note: m.note
+      }))
+    };
+
+    return this.apiService.post<ReturnDeclaration>('/declarations', payload)
+      .pipe(
+        tap(newDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          this.declarationsSubject.next([...currentDeclarations, newDeclaration]);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  updateDeclaration(id: number, declaration: Partial<Declaration>): Observable<Declaration> {
+    this.isLoading$.next(true);
+    return this.apiService.put<Declaration>(`/declarations/${id}`, declaration)
+      .pipe(
+        tap(updatedDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          const index = currentDeclarations.findIndex(d => d.id === id);
+          if (index !== -1) {
+            currentDeclarations[index] = updatedDeclaration;
+            this.declarationsSubject.next([...currentDeclarations]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  deleteDeclaration(id: number): Observable<void> {
+    this.isLoading$.next(true);
+    return this.apiService.delete<void>(`/declarations/${id}`)
+      .pipe(
+        tap(() => {
+          const currentDeclarations = this.declarationsSubject.value;
+          this.declarationsSubject.next(currentDeclarations.filter(d => d.id !== id));
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  // Fixed method name
+  approveDeclaration(id: number, notes?: string): Observable<Declaration> {
+    this.isLoading$.next(true);
+    const payload = notes ? { note: notes } : {};
+    return this.apiService.post<Declaration>(`/declarations/${id}/approve`, payload)
+      .pipe(
+        tap(updatedDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          const index = currentDeclarations.findIndex(d => d.id === id);
+          if (index !== -1) {
+            currentDeclarations[index] = updatedDeclaration;
+            this.declarationsSubject.next([...currentDeclarations]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  // Fixed method name
+  rejectDeclaration(id: number, reason?: string): Observable<Declaration> {
+    this.isLoading$.next(true);
+    const payload = reason ? { note: reason } : {};
+    return this.apiService.post<Declaration>(`/declarations/${id}/reject`, payload)
+      .pipe(
+        tap(updatedDeclaration => {
+          const currentDeclarations = this.declarationsSubject.value;
+          const index = currentDeclarations.findIndex(d => d.id === id);
+          if (index !== -1) {
+            currentDeclarations[index] = updatedDeclaration;
+            this.declarationsSubject.next([...currentDeclarations]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  getDeclarationMovements(declarationId: number): Observable<MaterialMovement[]> {
+    return this.apiService.get<MaterialMovement[]>(`/declarations/${declarationId}/movements`);
+  }
+
+  getPendingDeclarations(): Observable<Declaration[]> {
+    return this.getDeclarationsByStatus(DeclarationStatus.PENDING);
+  }
+
+  getOutgoingDeclarations(): Observable<OutgoingDeclaration[]> {
+    return this.getDeclarationsByType('OUTGOING') as Observable<OutgoingDeclaration[]>;
+  }
+
+  getReturnDeclarations(): Observable<ReturnDeclaration[]> {
+    return this.getDeclarationsByType('RETURN') as Observable<ReturnDeclaration[]>;
+  }
+
+  getOutgoingDeclarationsNotReturned(): Observable<Declaration[]> {
+    return this.getDeclarationsByType('OUTGOING').pipe(
+      map(declarations =>
+        declarations.filter(d =>
+          d.status === DeclarationStatus.APPROVED &&
+          (d as OutgoingDeclaration).movements?.some(m =>
+            m.status !== MovementStatus.VERIFIED
+          )
+        )
+      )
+    );
+  }
+
+  getLoading(): Observable<boolean> {
+    return this.isLoading$.asObservable();
+  }
+}
+
+
+
+============================================================
+FILE: material.service.spec.ts
+PACKAGE: services
+============================================================
+
+import { TestBed } from '@angular/core/testing';
+
+import { MaterialService } from './material.service';
+
+describe('MaterialService', () => {
+  let service: MaterialService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(MaterialService);
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+
+
+
+============================================================
+FILE: material.service.ts
+PACKAGE: services
+============================================================
+
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { tap, catchError, finalize, map } from 'rxjs/operators';
+import { Material, MaterialFormData, MaterialState } from '../models/material';
+import { MaterialStatus, MaterialCondition } from '../models/enums';
+import { ApiService } from './api.service';
+import { MaterialCategory } from '../models/category';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class MaterialService {
+  private materialsSubject = new BehaviorSubject<Material[]>([]);
+  public materials$ = this.materialsSubject.asObservable();
+
+  private isLoading$ = new BehaviorSubject<boolean>(false);
+  public loading$ = this.isLoading$.asObservable();
+
+  private errorSubject = new BehaviorSubject<string | null>(null);
+  public error$ = this.errorSubject.asObservable();
+
+  constructor(private apiService: ApiService) {
+    this.loadMaterials();
+  }
+
+  /**
+   * Load all materials from API
+   */
+  loadMaterials(): void {
+    this.isLoading$.next(true);
+    this.apiService.get<Material[]>('/materials')
+      .pipe(
+        tap(materials => {
+          this.materialsSubject.next(materials);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      )
+      .subscribe();
+  }
+
+  /**
+   * Get all materials
+   */
+  getMaterials(): Observable<Material[]> {
+    return this.materials$;
+  }
+
+  /**
+   * Get material by ID
+   */
+  getMaterialById(id: number): Observable<Material> {
+    return this.apiService.get<Material>(`/materials/${id}`);
+  }
+
+  /**
+   * Create new material
+   */
+  addMaterial(materialData: MaterialFormData): Observable<Material> {
+    this.isLoading$.next(true);
+
+    // Transform form data to match backend expectations
+    const payload: any = {
+      name: materialData.name,
+      reference: materialData.reference,
+      serialNumber: materialData.serialNumber,
+      description: materialData.description,
+      status: materialData.status,
+      currentCondition: materialData.currentCondition,
+      purchaseId: materialData.purchaseId,
+      category: materialData.category ? { id: materialData.category } : null
+    };
+
+    return this.apiService.post<Material>('/materials', payload)
+      .pipe(
+        tap(newMaterial => {
+          const currentMaterials = this.materialsSubject.value;
+          this.materialsSubject.next([...currentMaterials, newMaterial]);
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Update material
+   */
+  updateMaterial(id: number, materialData: Partial<MaterialFormData>): Observable<Material> {
+    this.isLoading$.next(true);
+
+    // Transform form data to match backend expectations
+    const payload: any = { ...materialData };
+    if (materialData.category !== undefined) {
+      payload.category = materialData.category ? { id: materialData.category } : null;
+    }
+
+    return this.apiService.put<Material>(`/materials/${id}`, payload)
+      .pipe(
+        tap(updatedMaterial => {
+          const currentMaterials = this.materialsSubject.value;
+          const index = currentMaterials.findIndex(m => m.id === id);
+          if (index !== -1) {
+            currentMaterials[index] = updatedMaterial;
+            this.materialsSubject.next([...currentMaterials]);
+          }
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Delete material
+   */
+  deleteMaterial(id: number): Observable<void> {
+    this.isLoading$.next(true);
+    return this.apiService.delete<void>(`/materials/${id}`)
+      .pipe(
+        tap(() => {
+          const currentMaterials = this.materialsSubject.value;
+          this.materialsSubject.next(currentMaterials.filter(m => m.id !== id));
+          this.errorSubject.next(null);
+        }),
+        catchError(error => {
+          this.errorSubject.next(error.message);
+          throw error;
+        }),
+        finalize(() => this.isLoading$.next(false))
+      );
+  }
+
+  /**
+   * Get available materials
+   */
+  getAvailableMaterials(): Observable<Material[]> {
+    return this.materials$.pipe(
+      map(materials => materials.filter(m => m.status === MaterialStatus.AVAILABLE))
+    );
+  }
+
+  /**
+   * Update material status
+   */
+  updateMaterialStatus(id: number, status: MaterialStatus): Observable<Material> {
+    return this.updateMaterial(id, { status });
+  }
+
+  /**
+   * Update material condition
+   */
+  updateMaterialCondition(id: number, condition: MaterialCondition): Observable<Material> {
+    return this.updateMaterial(id, { currentCondition: condition });
+  }
+
+  /**
+   * Get materials by serial number
+   */
+  getMaterialBySerialNumber(serialNumber: string): Observable<Material> {
+    return this.apiService.get<Material>(`/materials/serial/${serialNumber}`);
+  }
+
+  /**
+   * Get root categories
+   */
+  getRootCategories(): Observable<MaterialCategory[]> {
+    return this.apiService.get<MaterialCategory[]>('/materials/root-categories');
+  }
+
+  /**
+   * Get material movements
+   */
+  getMaterialMovements(materialId: number): Observable<any[]> {
+    return this.apiService.get<any[]>(`/materials/${materialId}/movements`);
+  }
+
+  getLoading(): Observable<boolean> {
+    return this.isLoading$.asObservable();
+  }
+}
+
+
+

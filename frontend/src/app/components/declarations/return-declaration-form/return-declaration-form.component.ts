@@ -1,0 +1,156 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { DeclarationService } from '../../../services/declaration.service';
+import { MaterialService } from '../../../services/material.service';
+import { Material } from '../../../models/material';
+import { MaterialCondition } from '../../../models/enums';
+import { Subject, takeUntil } from 'rxjs';
+
+@Component({
+  selector: 'app-return-declaration-form',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './return-declaration-form.component.html',
+  styleUrls: ['./return-declaration-form.component.css']
+})
+export class ReturnDeclarationFormComponent implements OnInit, OnDestroy {
+  form!: FormGroup;
+  submitted = false;
+  isLoading = false;
+  availableMaterials: Material[] = [];
+  conditions = Object.values(MaterialCondition);
+
+  error: string | null = null;
+
+  private destroy$ = new Subject<void>();
+
+  get materials(): FormArray {
+    return this.form.get('materials') as FormArray;
+  }
+
+  get f() {
+    return this.form.controls;
+  }
+
+  constructor(
+    private fb: FormBuilder,
+    private declarationService: DeclarationService,
+    private materialService: MaterialService,
+    private router: Router
+  ) {
+    this.initForm();
+  }
+
+  ngOnInit(): void {
+    this.loadAvailableMaterials();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initForm(): void {
+    this.form = this.fb.group({
+      declaredBy: ['', [Validators.required, Validators.minLength(2)]],
+      returnConditionNote: ['', Validators.required],
+      verifiedBy: [''],
+      note: ['', Validators.maxLength(500)],
+      materials: this.fb.array([], Validators.required)
+    });
+  }
+
+  private loadAvailableMaterials(): void {
+    this.materialService.getMaterials()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (materials) => {
+          this.availableMaterials = materials;
+        },
+        error: (err) => {
+          this.error = 'Erreur lors du chargement des matériels: ' + err.message;
+        }
+      });
+  }
+
+  addMaterial(): void {
+    const group = this.fb.group({
+      material: [null, Validators.required],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      condition: [MaterialCondition.GOOD, Validators.required],
+      note: ['']
+    });
+    this.materials.push(group);
+  }
+
+  removeMaterial(index: number): void {
+    this.materials.removeAt(index);
+  }
+
+  submit(): void {
+    this.submitted = true;
+
+    if (this.form.invalid || this.materials.length === 0) {
+      this.error = 'Veuillez remplir tous les champs requis et ajouter au moins un matériel';
+      return;
+    }
+
+    this.isLoading = true;
+    this.error = null;
+
+    const formValue = this.form.value;
+    const declarationData = {
+      declaredBy: formValue.declaredBy,
+      returnConditionNote: formValue.returnConditionNote,
+      verifiedBy: formValue.verifiedBy || null,
+      note: formValue.note || null,
+      movements: formValue.materials.map((m: any) => ({
+        material: m.material,
+        quantity: m.quantity,
+        condition: m.condition,
+        note: m.note || null
+      }))
+    };
+
+    this.declarationService.createReturnDeclaration(declarationData)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isLoading = false;
+          alert('Déclaration de retour créée avec succès!');
+          this.router.navigate(['/declarations/list']);
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.error = 'Erreur lors de la création: ' + error.message;
+          console.error('Error creating declaration:', error);
+        }
+      });
+  }
+
+  cancel(): void {
+    if (confirm('Êtes-vous sûr de vouloir annuler? Les données seront perdues.')) {
+      this.router.navigate(['/declarations/list']);
+    }
+  }
+
+  clearError(): void {
+    this.error = null;
+  }
+
+  getMaterialName(materialId: number): string {
+    return this.availableMaterials.find(m => m.id === materialId)?.name || 'Unknown';
+  }
+
+  getConditionLabel(condition: MaterialCondition): string {
+    const labels: Record<MaterialCondition, string> = {
+      [MaterialCondition.GOOD]: 'Bon état',
+      [MaterialCondition.DAMAGED]: 'Endommagé',
+      [MaterialCondition.BROKEN]: 'Cassé',
+      [MaterialCondition.IN_REPAIR]: 'En réparation'
+    };
+    return labels[condition] || condition;
+  }
+}

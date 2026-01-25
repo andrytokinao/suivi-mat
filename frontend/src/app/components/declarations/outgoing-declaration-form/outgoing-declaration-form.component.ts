@@ -4,18 +4,18 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } fr
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { DeclarationService } from '../../../services/declaration.service';
 import { MaterialService } from '../../../services/material.service';
-import { ReturnDeclaration } from '../../../models/declaration';
+import { OutgoingDeclaration } from '../../../models/declaration';
 import { Material } from '../../../models/material';
 
 @Component({
-  selector: 'app-return-declaration-form',
+  selector: 'app-outgoing-declaration-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './return-declaration.component.html',
-  styleUrls: ['./return-declaration.component.css']
+  templateUrl: './outgoing-declaration-form.component.html',
+  styleUrls: ['./outgoing-declaration-form.component.css']
 })
-export class ReturnDeclarationFormComponent implements OnInit {
-  @Input() declaration?: ReturnDeclaration;
+export class OutgoingDeclarationFormComponent implements OnInit {
+  @Input() declaration?: OutgoingDeclaration;
 
   form!: FormGroup;
   submitted = false;
@@ -39,7 +39,7 @@ export class ReturnDeclarationFormComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       declaredBy: ['', Validators.required],
-      returnConditionNote: ['', Validators.required],
+      usagePurpose: ['', Validators.required],
       note: [''],
       materials: this.fb.array([])
     });
@@ -62,8 +62,7 @@ export class ReturnDeclarationFormComponent implements OnInit {
   addMaterial(): void {
     const group = this.fb.group({
       materialId: [null, Validators.required],
-      quantity: [1, [Validators.required, Validators.min(1)]],
-      condition: ['GOOD', Validators.required]
+      quantity: [1, [Validators.required, Validators.min(1)]]
     });
     this.materials.push(group);
   }
@@ -94,7 +93,7 @@ export class ReturnDeclarationFormComponent implements OnInit {
         }
       });
     } else {
-      this.declarationService.createReturnDeclaration(formValue).subscribe({
+      this.declarationService.createOutgoingDeclaration(formValue).subscribe({
         next: (result) => {
           this.isLoading = false;
           this.activeModal.close(result);

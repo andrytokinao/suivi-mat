@@ -1,42 +1,55 @@
 import { Component, OnInit, HostListener } from '@angular/core';
-import {Router, NavigationEnd, RouterOutlet} from '@angular/router';
+import { Router, NavigationEnd, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import {FormsModule} from '@angular/forms';
-import {SidebarComponent} from './components/layout/sidebar/sidebar.component';
+import { FormsModule } from '@angular/forms';
+import { SidebarComponent } from './components/layout/sidebar/sidebar.component';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
-  standalone:true,
+  standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
     RouterOutlet,
     SidebarComponent,
     NgbModule
-  ],
+  ]
 })
 export class AppComponent implements OnInit {
   isSidebarCollapsed = false;
   isSidebarOpen = false;
-  currentRoute = 'Dashboard';
-  hasNotifications = true;
+  currentRoute = 'Accueil';
   isMobile = false;
+
+  private routeMap: { [key: string]: string } = {
+    '/': 'Accueil',
+    '/declarations': 'Déclarations',
+    '/declarations/outgoing/new': 'Nouvelle Sortie',
+    '/declarations/return/new': 'Nouveau Retour',
+    '/declarations/list': 'Liste des Déclarations',
+    '/materials': 'Matériels',
+    '/materials/list': 'Liste des Matériels',
+    '/categories': 'Catégories',
+    '/categories/list': 'Liste des Catégories',
+    '/admin': 'Administration',
+    '/admin/validations': 'Validations en Attente'
+  };
 
   constructor(private router: Router) {
     this.checkScreenSize();
   }
 
   ngOnInit(): void {
-    // Écouter les changements de route pour mettre à jour le breadcrumb
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
+      .subscribe((event: any) => {
         this.updateCurrentRoute(event.url);
       });
 
-    // Initialiser le breadcrumb
     this.updateCurrentRoute(this.router.url);
   }
 
@@ -48,7 +61,6 @@ export class AppComponent implements OnInit {
   private checkScreenSize(): void {
     this.isMobile = window.innerWidth < 768;
 
-    // Fermer automatiquement la sidebar sur mobile
     if (this.isMobile) {
       this.isSidebarOpen = false;
     }
@@ -56,11 +68,9 @@ export class AppComponent implements OnInit {
 
   toggleSidebar(): void {
     if (this.isMobile) {
-      // Sur mobile, toggle l'overlay
       this.isSidebarOpen = !this.isSidebarOpen;
       this.toggleBodyScroll();
     } else {
-      // Sur desktop, collapse/expand
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
     }
   }
@@ -74,36 +84,17 @@ export class AppComponent implements OnInit {
   }
 
   private updateCurrentRoute(url: string): void {
-    // Mapper les URLs aux noms de routes
-    const routeMap: { [key: string]: string } = {
-      '/': 'Dashboard',
-      '/dashboard': 'Dashboard',
-      '/materials': 'Matériels',
-      '/categories': 'Catégories',
-      '/users': 'Utilisateurs',
-      '/settings': 'Paramètres',
-      '/reports': 'Rapports',
-      '/inventory': 'Inventaire',
-      '/analytics': 'Analytique'
-    };
+    // Try exact match first
+    if (this.routeMap[url]) {
+      this.currentRoute = this.routeMap[url];
+      return;
+    }
 
-    // Trouver la route correspondante
-    const matchedRoute = Object.keys(routeMap).find(route =>
+    // Try partial match
+    const matchedRoute = Object.keys(this.routeMap).find(route =>
       url.startsWith(route) && route !== '/'
-    ) || '/';
+    );
 
-    this.currentRoute = routeMap[matchedRoute] || 'Page';
-  }
-
-  // Méthode pour gérer les notifications (exemple)
-  onNotificationClick(): void {
-    console.log('Notifications clicked');
-    // Implémenter la logique des notifications
-  }
-
-  // Méthode pour gérer le profil utilisateur (exemple)
-  onUserProfileClick(): void {
-    console.log('User profile clicked');
-    // Implémenter la logique du menu utilisateur
+    this.currentRoute = matchedRoute ? this.routeMap[matchedRoute] : 'Page';
   }
 }

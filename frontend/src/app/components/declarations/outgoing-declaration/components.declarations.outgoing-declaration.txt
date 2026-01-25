@@ -1,3 +1,8 @@
+﻿============================================================
+FILE: outgoing-declaration.component.ts
+PACKAGE: components.declarations.outgoing-declaration
+============================================================
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Material } from '../../../models/material';
@@ -213,3 +218,6 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
     this.error = null;
   }
 }
+
+
+

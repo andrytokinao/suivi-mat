@@ -1,0 +1,19 @@
+﻿============================================================
+FILE: header.component.ts
+PACKAGE: components.layout.header
+============================================================
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-header',
+  imports: [],
+  templateUrl: './header.component.html',
+  styleUrl: './header.component.css'
+})
+export class HeaderComponent {
+
+}
+
+
+

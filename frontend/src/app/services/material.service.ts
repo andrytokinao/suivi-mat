@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { tap, catchError, finalize } from 'rxjs/operators';
-import { Material, MaterialState } from '../models/material';
+import { tap, catchError, finalize, map } from 'rxjs/operators';
+import { Material, MaterialFormData, MaterialState } from '../models/material';
 import { MaterialStatus, MaterialCondition } from '../models/enums';
 import { ApiService } from './api.service';
+import { MaterialCategory } from '../models/category';
 
 @Injectable({
   providedIn: 'root'
@@ -59,9 +60,22 @@ export class MaterialService {
   /**
    * Create new material
    */
-  addMaterial(material: Omit<Material, 'id' | 'createdAt'>): Observable<Material> {
+  addMaterial(materialData: MaterialFormData): Observable<Material> {
     this.isLoading$.next(true);
-    return this.apiService.post<Material>('/materials', material)
+
+    // Transform form data to match backend expectations
+    const payload: any = {
+      name: materialData.name,
+      reference: materialData.reference,
+      serialNumber: materialData.serialNumber,
+      description: materialData.description,
+      status: materialData.status,
+      currentCondition: materialData.currentCondition,
+      purchaseId: materialData.purchaseId,
+      category: materialData.category ? { id: materialData.category } : null
+    };
+
+    return this.apiService.post<Material>('/materials', payload)
       .pipe(
         tap(newMaterial => {
           const currentMaterials = this.materialsSubject.value;
@@ -79,9 +93,16 @@ export class MaterialService {
   /**
    * Update material
    */
-  updateMaterial(id: number, material: Partial<Material>): Observable<Material> {
+  updateMaterial(id: number, materialData: Partial<MaterialFormData>): Observable<Material> {
     this.isLoading$.next(true);
-    return this.apiService.put<Material>(`/materials/${id}`, material)
+
+    // Transform form data to match backend expectations
+    const payload: any = { ...materialData };
+    if (materialData.category !== undefined) {
+      payload.category = materialData.category ? { id: materialData.category } : null;
+    }
+
+    return this.apiService.put<Material>(`/materials/${id}`, payload)
       .pipe(
         tap(updatedMaterial => {
           const currentMaterials = this.materialsSubject.value;
@@ -124,16 +145,9 @@ export class MaterialService {
    * Get available materials
    */
   getAvailableMaterials(): Observable<Material[]> {
-    return this.apiService.get<Material[]>('/materials')
-      .pipe(
-        tap(materials => {
-          const filtered = materials.filter(m =>
-            m.status === MaterialStatus.AVAILABLE &&
-            (!m.quantifiable || (m.quantity && m.quantity > 0))
-          );
-          return filtered;
-        })
-      );
+    return this.materials$.pipe(
+      map(materials => materials.filter(m => m.status === MaterialStatus.AVAILABLE))
+    );
   }
 
   /**
@@ -151,13 +165,6 @@ export class MaterialService {
   }
 
   /**
-   * Update material quantity
-   */
-  updateMaterialQuantity(id: number, quantity: number): Observable<Material> {
-    return this.updateMaterial(id, { quantity });
-  }
-
-  /**
    * Get materials by serial number
    */
   getMaterialBySerialNumber(serialNumber: string): Observable<Material> {
@@ -167,15 +174,15 @@ export class MaterialService {
   /**
    * Get root categories
    */
-  getRootCategories() {
-    return this.apiService.get(`/materials/root-categories`);
+  getRootCategories(): Observable<MaterialCategory[]> {
+    return this.apiService.get<MaterialCategory[]>('/materials/root-categories');
   }
 
   /**
    * Get material movements
    */
-  getMaterialMovements(materialId: number) {
-    return this.apiService.get(`/materials/${materialId}/movements`);
+  getMaterialMovements(materialId: number): Observable<any[]> {
+    return this.apiService.get<any[]>(`/materials/${materialId}/movements`);
   }
 
   getLoading(): Observable<boolean> {

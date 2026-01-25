@@ -1,6 +1,6 @@
 <div class="material-container">
 
-  <!-- HEADER : menu à gauche / recherche à droite -->
+  <!-- HEADER -->
   <div class="header">
 
     <!-- Menu catégories -->
@@ -9,17 +9,22 @@
     <!-- Recherche -->
     <span class="search-box">
       <mat-form-field appearance="outline" class="search-field">
-      <input matInput placeholder="Rechercher " [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange(searchTerm)" />
-    <button
-    mat-icon-button
-    matSuffix
-    *ngIf="searchTerm"
-    (click)="searchTerm=''; onSearchChange('')"
-    aria-label="Clear"
-  >
-    <mat-icon>close</mat-icon>
-  </button>
-</mat-form-field>
+        <input
+          matInput
+          placeholder="Rechercher"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange($event)"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          *ngIf="searchTerm"
+          (click)="searchTerm=''; onSearchChange('')"
+          aria-label="Clear"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
       <i class="fa fa-search"></i>
     </span>
 
@@ -62,9 +67,9 @@
             <h4 class="material-name">{{ m.name }}</h4>
             <span
               class="badge"
-              [ngClass]="m.currentCondition.toLowerCase()"
+              [ngClass]="getConditionClass(m.currentCondition)"
             >
-              {{ m.currentCondition }}
+              {{ m.currentCondition || 'Non défini' }}
             </span>
           </div>
 
@@ -79,7 +84,7 @@
                 Catégorie
               </span>
               <span class="info-value">
-                {{ m.categoryObj?.name || 'Non catégorisé' }}
+                {{ getCategoryName(m.category) }}
               </span>
             </div>
 
@@ -92,33 +97,62 @@
                 </svg>
                 Référence
               </span>
-              <span class="info-value">{{ m.reference }}</span>
+              <span class="info-value">{{ m.reference || 'N/A' }}</span>
             </div>
 
-            <div class="info-row" *ngIf="m.quantifiable">
+            <div class="info-row">
               <span class="info-label">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <line x1="19" y1="8" x2="19" y2="14"/>
-                  <line x1="22" y1="11" x2="16" y2="11"/>
+                  <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+                  <polyline points="17 2 12 7 7 2"></polyline>
                 </svg>
-                Quantité
+                Statut
               </span>
-              <span class="info-value quantity">
-                {{ m.quantity }}
+              <span class="info-value">{{ m.status }}</span>
+            </div>
+
+            <div class="info-row" *ngIf="m.serialNumber">
+              <span class="info-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2">
+                  <path d="M3 3h7l7 7M3 17a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-6l-7-7H6a3 3 0 0 0-3 3z"/>
+                </svg>
+                Numéro de série
               </span>
+              <span class="info-value">{{ m.serialNumber }}</span>
             </div>
 
           </div>
 
           <!-- Actions -->
           <div class="card-footer">
-            <button class="btn btn-sm btn-warning" (click)="openEditModal(m)" title="Modifier">
+            <button
+              class="btn btn-sm btn-info"
+              (click)="openStatusChangeModal(m)"
+              title="Changer le statut"
+            >
+              <i class="fa fa-exchange"></i> Statut
+            </button>
+            <button
+              class="btn btn-sm btn-secondary"
+              (click)="openConditionChangeModal(m)"
+              title="Changer l'état"
+            >
+              <i class="fa fa-refresh"></i> État
+            </button>
+            <button
+              class="btn btn-sm btn-warning"
+              (click)="openEditModal(m)"
+              title="Modifier"
+            >
               <i class="fa fa-edit"></i>
             </button>
-            <button class="btn btn-sm btn-danger" (click)="deleteMaterial(m)" title="Supprimer">
+            <button
+              class="btn btn-sm btn-danger"
+              (click)="deleteMaterial(m)"
+              title="Supprimer"
+            >
               <i class="fa fa-trash"></i>
             </button>
           </div>

@@ -1,3 +1,8 @@
+﻿============================================================
+FILE: material-list.component.ts
+PACKAGE: components.materials.material-list
+============================================================
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +20,6 @@ import { MaterialCategory } from '../../../models/category';
 import { MaterialStatus, MaterialCondition } from '../../../models/enums';
 import { MaterialFormComponent } from '../material-form/material-form.component';
 import { MaterialStatusModalComponent } from '../material-status-modal/material-status-modal.component';
-import {MenueCategoryComponent} from '../../../shared/menue-category/menue-category.component';
 
 @Component({
   selector: 'app-material-list',
@@ -27,8 +31,7 @@ import {MenueCategoryComponent} from '../../../shared/menue-category/menue-categ
     MatInputModule,
     MatIconModule,
     MatButtonModule,
-    MatProgressSpinnerModule,
-    MenueCategoryComponent
+    MatProgressSpinnerModule
   ],
   templateUrl: './material-list.component.html',
   styleUrls: ['./material-list.component.css']
@@ -340,3 +343,6 @@ export class MaterialListComponent implements OnInit, OnDestroy {
     this.error = null;
   }
 }
+
+
+

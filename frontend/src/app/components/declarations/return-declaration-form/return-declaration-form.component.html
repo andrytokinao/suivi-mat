@@ -1,0 +1,184 @@
+<div class="return-declaration-container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <h1>Nouvelle Déclaration de Retour</h1>
+      <p class="subtitle">Enregistrez le retour de matériels et leur état</p>
+    </div>
+  </div>
+
+
+
+  <!-- Form Container -->
+  <div class="form-container">
+    <form [formGroup]="form" (ngSubmit)="submit()">
+
+      <!-- Declarant Section -->
+      <div class="form-section">
+        <h3>Informations Générales</h3>
+
+        <div class="form-group">
+          <label for="declaredBy" class="form-label">Déclarant *</label>
+          <input
+            type="text"
+            class="form-control"
+            [class.is-invalid]="submitted && f['declaredBy'].invalid"
+            id="declaredBy"
+            formControlName="declaredBy"
+            placeholder="Nom de la personne retournant les matériels"
+          />
+          <div class="invalid-feedback" *ngIf="submitted && f['declaredBy'].invalid">
+            <span *ngIf="f['declaredBy'].errors?.['required']">Le déclarant est requis</span>
+            <span *ngIf="f['declaredBy'].errors?.['minlength']">Au minimum 2 caractères</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="returnConditionNote" class="form-label">État général du retour *</label>
+          <textarea
+            class="form-control"
+            [class.is-invalid]="submitted && f['returnConditionNote'].invalid"
+            id="returnConditionNote"
+            formControlName="returnConditionNote"
+            rows="2"
+            placeholder="Décrivez l'état général des matériels retournés..."
+          ></textarea>
+          <div class="invalid-feedback" *ngIf="submitted && f['returnConditionNote'].invalid">
+            L'état du retour est requis
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="verifiedBy" class="form-label">Vérifié par (optionnel)</label>
+          <input
+            type="text"
+            class="form-control"
+            id="verifiedBy"
+            formControlName="verifiedBy"
+            placeholder="Nom de la personne qui a vérifié"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="note" class="form-label">Observations (optionnel)</label>
+          <textarea
+            class="form-control"
+            [class.is-invalid]="submitted && f['note'].invalid"
+            id="note"
+            formControlName="note"
+            rows="3"
+            placeholder="Observations supplémentaires sur le retour..."
+          ></textarea>
+          <div class="invalid-feedback" *ngIf="submitted && f['note'].invalid">
+            Maximum 500 caractères
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Matériels Retournés</h3>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            (click)="addMaterial()"
+          >
+            <i class="fa fa-plus"></i> Ajouter un matériel
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped" *ngIf="materials.length > 0">
+            <thead class="table-light">
+            <tr>
+              <th>Matériel</th>
+              <th>Quantité</th>
+              <th>État</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+            </thead>
+            <tbody formArrayName="materials">
+            <tr *ngFor="let material of materials.controls; let i = index" [formGroupName]="i">
+              <td>
+                <select class="form-select form-select-sm" formControlName="material">
+                  <option value="">Sélectionner un matériel</option>
+                  <option *ngFor="let m of availableMaterials" [value]="m.id">
+                    {{ m.name }} ({{ m.reference }})
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  formControlName="quantity"
+                  min="1"
+                />
+              </td>
+              <td>
+<!--                <select class="form-select form-select-sm" formControlName="condition">-->
+<!--                  <option *ngFor="let condition of conditions" [value]="condition">-->
+<!--                    {{ getConditionLabel(condition) }}-->
+<!--                  </option>-->
+<!--                </select>-->
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  formControlName="note"
+                  placeholder="Note..."
+                />
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger"
+                  (click)="removeMaterial(i)"
+                >
+                  <i class="fa fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="submitted && materials.length === 0" class="alert alert-warning">
+          Au moins un matériel est requis
+        </div>
+
+        <div *ngIf="materials.length === 0 && !submitted" class="empty-materials">
+          <p>Cliquez sur le bouton "Ajouter un matériel" pour enregistrer les retours</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancel()"
+        >
+          Annuler
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="isLoading"
+        >
+          <span *ngIf="!isLoading">Créer la Déclaration</span>
+          <span *ngIf="isLoading">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Traitement...
+          </span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
