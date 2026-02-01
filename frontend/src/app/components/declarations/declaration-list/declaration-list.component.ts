@@ -25,11 +25,11 @@ export class DeclarationListComponent implements OnInit, OnDestroy {
   error: string | null = null;
 
   page = 1;
-  pageSize = 10;
+  pageSize = 50;
   pagedDeclarations: Declaration[] = [];
 
   searchTerm = '';
-  filterType: 'ALL' | 'OUTGOING' | 'RETURN' = 'ALL';
+  filterType: 'ALL' | 'SORTIE' | 'RETOUR' = 'ALL';
   filterStatus: DeclarationStatus | 'ALL' = 'ALL';
 
   statuses = Object.values(DeclarationStatus);
@@ -177,11 +177,11 @@ export class DeclarationListComponent implements OnInit, OnDestroy {
   }
 
   getTypeLabel(type: string): string {
-    return type === 'OUTGOING' ? 'Sortie' : 'Retour';
+    return type === 'SORTIE' ? 'Sortie' : 'Retour';
   }
 
   getTypeClass(type: string): string {
-    return type === 'OUTGOING' ? 'bg-info' : 'bg-success';
+    return type === 'SORTIE' ? 'bg-info' : 'bg-success';
   }
 
   openNewOutgoingDeclaration(): void {

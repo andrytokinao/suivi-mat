@@ -154,7 +154,7 @@ export class CategoryService {
    * Build category tree recursively
    */
   private buildCategoryTree(parent: MaterialCategory): MaterialCategory {
-    const children = this.categoriesSubject.value.filter(c => c.parent === parent.id);
+    const children = this.categoriesSubject.value.filter(c => c.parentId === parent.id);
     return {
       ...parent,
       children: children.length > 0 ? children.map(child => this.buildCategoryTree(child)) : []

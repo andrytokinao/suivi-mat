@@ -42,11 +42,11 @@
 
     <!-- Catégorie parent -->
     <div class="mb-3">
-      <label for="parent" class="form-label">Catégorie parent (optionnel)</label>
+      <label for="parentId" class="form-label">Catégorie parent (optionnel)</label>
       <select
         class="form-select"
-        id="parent"
-        formControlName="parent"
+        id="parentId"
+        formControlName="parentId"
       >
         <option [value]="null">Aucune (catégorie racine)</option>
         <option *ngFor="let cat of parentCategories" [value]="cat.id">

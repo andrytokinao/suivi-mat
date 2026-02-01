@@ -1,6 +1,5 @@
 package com.kinga.suivimat.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,13 +11,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-class MaterialState {
+public class MaterialState {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JsonBackReference
     private Material material;
 
     @Enumerated(EnumType.STRING)
@@ -28,7 +26,7 @@ class MaterialState {
     private String updatedBy;
     private LocalDateTime date;
 
-    enum MaterialStatus {
+    public enum MaterialStatus {
         AVAILABLE, IN_USE, UNDER_MAINTENANCE, LOST, RETIRED
     }
 }

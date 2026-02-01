@@ -1,184 +1,310 @@
-<div class="return-declaration-container">
-
-  <!-- Header -->
+<div class="container">
+  <!-- Header avec navigation retour -->
   <div class="header">
-    <div class="header-content">
-      <h1>Nouvelle Déclaration de Retour</h1>
-      <p class="subtitle">Enregistrez le retour de matériels et leur état</p>
+    <button class="back-btn" (click)="cancel()">
+      <mat-icon>arrow_back</mat-icon>
+      Retour
+    </button>
+    <h1>Nouvelle Déclaration de Retour</h1>
+    <div class="steps">
+      <div class="step" [class.active]="step === 1" [class.completed]="step > 1">
+        <div class="step-number">
+          <mat-icon *ngIf="step > 1">check</mat-icon>
+          <span *ngIf="step <= 1">1</span>
+        </div>
+        <div class="step-label">Sélection Sortie</div>
+      </div>
+      <div class="step-line" [class.active]="step > 1"></div>
+      <div class="step" [class.active]="step === 2" [class.completed]="step > 2">
+        <div class="step-number">
+          <mat-icon *ngIf="step > 2">check</mat-icon>
+          <span *ngIf="step <= 2">2</span>
+        </div>
+        <div class="step-label">Matériels à retourner</div>
+      </div>
+      <div class="step-line" [class.active]="step > 2"></div>
+      <div class="step" [class.active]="step === 3">
+        <div class="step-number">3</div>
+        <div class="step-label">Informations</div>
+      </div>
     </div>
   </div>
 
-
-
-  <!-- Form Container -->
-  <div class="form-container">
-    <form [formGroup]="form" (ngSubmit)="submit()">
-
-      <!-- Declarant Section -->
-      <div class="form-section">
-        <h3>Informations Générales</h3>
-
-        <div class="form-group">
-          <label for="declaredBy" class="form-label">Déclarant *</label>
-          <input
-            type="text"
-            class="form-control"
-            [class.is-invalid]="submitted && f['declaredBy'].invalid"
-            id="declaredBy"
-            formControlName="declaredBy"
-            placeholder="Nom de la personne retournant les matériels"
-          />
-          <div class="invalid-feedback" *ngIf="submitted && f['declaredBy'].invalid">
-            <span *ngIf="f['declaredBy'].errors?.['required']">Le déclarant est requis</span>
-            <span *ngIf="f['declaredBy'].errors?.['minlength']">Au minimum 2 caractères</span>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="returnConditionNote" class="form-label">État général du retour *</label>
-          <textarea
-            class="form-control"
-            [class.is-invalid]="submitted && f['returnConditionNote'].invalid"
-            id="returnConditionNote"
-            formControlName="returnConditionNote"
-            rows="2"
-            placeholder="Décrivez l'état général des matériels retournés..."
-          ></textarea>
-          <div class="invalid-feedback" *ngIf="submitted && f['returnConditionNote'].invalid">
-            L'état du retour est requis
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="verifiedBy" class="form-label">Vérifié par (optionnel)</label>
-          <input
-            type="text"
-            class="form-control"
-            id="verifiedBy"
-            formControlName="verifiedBy"
-            placeholder="Nom de la personne qui a vérifié"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="note" class="form-label">Observations (optionnel)</label>
-          <textarea
-            class="form-control"
-            [class.is-invalid]="submitted && f['note'].invalid"
-            id="note"
-            formControlName="note"
-            rows="3"
-            placeholder="Observations supplémentaires sur le retour..."
-          ></textarea>
-          <div class="invalid-feedback" *ngIf="submitted && f['note'].invalid">
-            Maximum 500 caractères
-          </div>
-        </div>
-      </div>
-
-      <!-- Materials Section -->
-      <div class="form-section">
-        <div class="section-header">
-          <h3>Matériels Retournés</h3>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-primary"
-            (click)="addMaterial()"
-          >
-            <i class="fa fa-plus"></i> Ajouter un matériel
-          </button>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-striped" *ngIf="materials.length > 0">
-            <thead class="table-light">
-            <tr>
-              <th>Matériel</th>
-              <th>Quantité</th>
-              <th>État</th>
-              <th>Note</th>
-              <th></th>
-            </tr>
-            </thead>
-            <tbody formArrayName="materials">
-            <tr *ngFor="let material of materials.controls; let i = index" [formGroupName]="i">
-              <td>
-                <select class="form-select form-select-sm" formControlName="material">
-                  <option value="">Sélectionner un matériel</option>
-                  <option *ngFor="let m of availableMaterials" [value]="m.id">
-                    {{ m.name }} ({{ m.reference }})
-                  </option>
-                </select>
-              </td>
-              <td>
-                <input
-                  type="number"
-                  class="form-control form-control-sm"
-                  formControlName="quantity"
-                  min="1"
-                />
-              </td>
-              <td>
-<!--                <select class="form-select form-select-sm" formControlName="condition">-->
-<!--                  <option *ngFor="let condition of conditions" [value]="condition">-->
-<!--                    {{ getConditionLabel(condition) }}-->
-<!--                  </option>-->
-<!--                </select>-->
-              </td>
-              <td>
-                <input
-                  type="text"
-                  class="form-control form-control-sm"
-                  formControlName="note"
-                  placeholder="Note..."
-                />
-              </td>
-              <td>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-danger"
-                  (click)="removeMaterial(i)"
-                >
-                  <i class="fa fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div *ngIf="submitted && materials.length === 0" class="alert alert-warning">
-          Au moins un matériel est requis
-        </div>
-
-        <div *ngIf="materials.length === 0 && !submitted" class="empty-materials">
-          <p>Cliquez sur le bouton "Ajouter un matériel" pour enregistrer les retours</p>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="form-actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="cancel()"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          [disabled]="isLoading"
-        >
-          <span *ngIf="!isLoading">Créer la Déclaration</span>
-          <span *ngIf="isLoading">
-            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            Traitement...
-          </span>
-        </button>
-      </div>
-
-    </form>
+  <!-- Messages d'erreur et de succès -->
+  <div *ngIf="error" class="alert alert-danger">
+    <mat-icon>error</mat-icon>
+    <span>{{ error }}</span>
+    <button class="close-btn" (click)="clearError()">×</button>
   </div>
 
+  <div *ngIf="successMessage" class="alert alert-success">
+    <mat-icon>check_circle</mat-icon>
+    <span>{{ successMessage }}</span>
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>{{ loadingMessage }}</p>
+  </div>
+
+  <!-- Étape 1: Sélection de la déclaration de sortie -->
+  <div *ngIf="step === 1 && !isLoading" class="step-content">
+    <div class="section-header">
+      <h2>
+        <mat-icon>assignment</mat-icon>
+        Sélectionnez la déclaration de sortie
+      </h2>
+      <p class="subtitle">Choisissez la déclaration de sortie pour laquelle vous souhaitez enregistrer un retour</p>
+    </div>
+
+    <div *ngIf="outgoingDeclarations.length === 0" class="empty-state">
+      <mat-icon>inbox</mat-icon>
+      <p>Aucune déclaration de sortie en attente de retour</p>
+      <button class="btn btn-secondary" (click)="cancel()">Retour à la liste</button>
+    </div>
+
+    <div class="declarations-grid">
+      <div
+        *ngFor="let declaration of outgoingDeclarations"
+        class="declaration-card"
+        [class.selected]="selectedOutgoingDeclaration?.id === declaration.id"
+        (click)="selectOutgoingDeclaration(declaration)">
+        <div class="declaration-header">
+          <div class="declaration-id">
+            <mat-icon>receipt</mat-icon>
+            #{{ declaration.id }}
+          </div>
+          <span class="badge badge-info">{{ declaration.status }}</span>
+        </div>
+        <div class="declaration-body">
+          <div class="declaration-info">
+            <mat-icon>person</mat-icon>
+            <span>{{ declaration.declaredBy }}</span>
+          </div>
+          <div class="declaration-info">
+            <mat-icon>event</mat-icon>
+            <span>{{ formatDate(declaration.declarationDate) }}</span>
+          </div>
+          <div class="declaration-info">
+            <mat-icon>description</mat-icon>
+            <span>{{ declaration.usagePurpose }}</span>
+          </div>
+          <div class="declaration-info" *ngIf="declaration.movements">
+            <mat-icon>inventory_2</mat-icon>
+            <span>{{ declaration.movements.length }} matériel(s)</span>
+          </div>
+        </div>
+        <div class="selection-indicator" *ngIf="selectedOutgoingDeclaration?.id === declaration.id">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" (click)="cancel()">
+        <mat-icon>cancel</mat-icon>
+        Annuler
+      </button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!selectedOutgoingDeclaration"
+        (click)="nextStep()">
+        Suivant
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Étape 2: Sélection des matériels à retourner -->
+  <div *ngIf="step === 2 && !isLoading" class="step-content">
+    <div class="section-header">
+      <h2>
+        <mat-icon>inventory_2</mat-icon>
+        Matériels à retourner
+      </h2>
+      <p class="subtitle">Sélectionnez les matériels et leur état de retour</p>
+    </div>
+
+    <div class="materials-list">
+      <div
+        *ngFor="let item of materialsToReturn"
+        class="material-return-card"
+        [class.selected]="item.selected">
+        <div class="material-select" (click)="toggleMaterialSelection(item)">
+          <mat-icon *ngIf="item.selected">check_box</mat-icon>
+          <mat-icon *ngIf="!item.selected">check_box_outline_blank</mat-icon>
+        </div>
+
+        <div class="material-details">
+          <h4>{{ item.movement.materialName || getMaterialName(item.movement.materialId) }}</h4>
+          <div class="material-meta">
+            <span class="meta-item">
+              <mat-icon>qr_code</mat-icon>
+              {{ item.movement.materialSerialNumber || 'N/A' }}
+            </span>
+            <span class="meta-item">
+              <mat-icon>inventory</mat-icon>
+              Qté sortie: {{ item.movement.quantity }}
+            </span>
+          </div>
+        </div>
+
+        <div class="return-options" *ngIf="item.selected">
+          <div class="option-group">
+            <label>Quantité retournée</label>
+            <input
+              type="number"
+              [(ngModel)]="item.returnQuantity"
+              [max]="item.movement.quantity"
+              min="1"
+              class="qty-input">
+          </div>
+
+          <div class="option-group">
+            <label>État au retour</label>
+            <select [(ngModel)]="item.returnCondition" class="condition-select">
+              <option *ngFor="let cond of conditions" [value]="cond">
+                {{ getConditionLabel(cond) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="option-group note-group">
+            <label>Note (optionnel)</label>
+            <input
+              type="text"
+              [(ngModel)]="item.note"
+              placeholder="Observation sur ce matériel..."
+              class="note-input">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="selected-count">
+      <mat-icon>check_circle</mat-icon>
+      {{ selectedMaterialsCount }} matériel(s) sélectionné(s)
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" (click)="previousStep()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+      <button
+        class="btn btn-primary"
+        [disabled]="selectedMaterialsCount === 0"
+        (click)="nextStep()">
+        Suivant
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Étape 3: Informations de la déclaration -->
+  <div *ngIf="step === 3 && !isLoading" class="step-content">
+    <div class="section-header">
+      <h2>
+        <mat-icon>edit_note</mat-icon>
+        Informations du retour
+      </h2>
+      <p class="subtitle">Complétez les informations de la déclaration de retour</p>
+    </div>
+
+    <div class="form-container">
+      <div class="form-row">
+        <div class="form-group">
+          <label>
+            <mat-icon>person</mat-icon>
+            Déclarant *
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="declaredBy"
+            placeholder="Votre nom complet"
+            [class.invalid]="!declaredBy">
+          <span class="helper-text" *ngIf="!declaredBy">Ce champ est obligatoire</span>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <mat-icon>verified_user</mat-icon>
+            Vérifié par (optionnel)
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="verifiedBy"
+            placeholder="Nom du vérificateur">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <mat-icon>assignment_turned_in</mat-icon>
+          État général du retour *
+        </label>
+        <textarea
+          [(ngModel)]="returnConditionNote"
+          rows="3"
+          placeholder="Décrivez l'état général des matériels retournés..."
+          [class.invalid]="!returnConditionNote"></textarea>
+        <span class="helper-text" *ngIf="!returnConditionNote">Ce champ est obligatoire</span>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <mat-icon>notes</mat-icon>
+          Observations (optionnel)
+        </label>
+        <textarea
+          [(ngModel)]="note"
+          rows="3"
+          placeholder="Observations supplémentaires..."></textarea>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary">
+        <h3>
+          <mat-icon>summarize</mat-icon>
+          Récapitulatif
+        </h3>
+        <div class="summary-content">
+          <div class="summary-item">
+            <strong>Déclaration de sortie:</strong> #{{ selectedOutgoingDeclaration?.id }}
+          </div>
+          <div class="summary-item" *ngIf="selectedOutgoingDeclaration">
+            <strong>Usage initial:</strong> {{ selectedOutgoingDeclaration.usagePurpose }}
+          </div>
+          <div class="summary-materials">
+            <strong>Matériels retournés ({{ selectedMaterialsCount }}):</strong>
+            <ul>
+              <li *ngFor="let item of materialsToReturn" [class.hidden]="!item.selected">
+                <mat-icon>inventory_2</mat-icon>
+                {{ item.movement.materialName || getMaterialName(item.movement.materialId) }}
+                <span class="qty">(x{{ item.returnQuantity }})</span>
+                <span class="badge" [class]="getConditionClass(item.returnCondition)">
+                  {{ getConditionLabel(item.returnCondition) }}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" (click)="previousStep()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+      <button
+        class="btn btn-primary"
+        [disabled]="!canSubmit() || isLoading"
+        (click)="submit()">
+        <mat-icon>send</mat-icon>
+        Créer la déclaration
+      </button>
+    </div>
+  </div>
 </div>

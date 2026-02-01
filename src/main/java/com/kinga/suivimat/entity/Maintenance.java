@@ -1,6 +1,5 @@
 package com.kinga.suivimat.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,11 +18,11 @@ public class Maintenance {
     private Long id;
 
     @ManyToOne
-    @JsonBackReference
     private Material material;
 
     private String maintenanceType;
     private String description;
+
 
     private LocalDateTime startDate;
     private LocalDateTime endDate;

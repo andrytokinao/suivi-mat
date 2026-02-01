@@ -8,6 +8,7 @@ import java.util.List;
 @Entity
 @DiscriminatorValue("OUTGOING")
 @Data
+@EqualsAndHashCode(callSuper=false)
 @AllArgsConstructor @Builder
 public class OutgoingDeclaration extends Declaration {
 

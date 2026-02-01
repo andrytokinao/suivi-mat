@@ -2,7 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { MaterialService } from '../../../services/material.service';
-import { Material, MaterialFormData } from '../../../models/material';
+import { Material, MaterialCreateData } from '../../../models/material';
 import { MaterialStatus, MaterialCondition } from '../../../models/enums';
 import { MaterialCategory } from '../../../models/category';
 import { CommonModule } from '@angular/common';
@@ -44,11 +44,8 @@ export class MaterialFormComponent implements OnInit {
   initForm(): void {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      reference: ['', Validators.required],
-      serialNumber: [''],
       description: [''],
-      category: [null, Validators.required],
-      status: [MaterialStatus.AVAILABLE, Validators.required],
+      categoryId: [null, Validators.required],
       currentCondition: [MaterialCondition.GOOD],
       purchaseId: ['']
     });
@@ -57,17 +54,10 @@ export class MaterialFormComponent implements OnInit {
   patchFormWithMaterial(): void {
     if (!this.material) return;
 
-    const categoryId = typeof this.material.category === 'number'
-      ? this.material.category
-      : (this.material.category as any)?.id || null;
-
     this.form.patchValue({
       name: this.material.name,
-      reference: this.material.reference,
-      serialNumber: this.material.serialNumber,
       description: this.material.description,
-      category: categoryId,
-      status: this.material.status,
+      categoryId: this.material.categoryId,
       currentCondition: this.material.currentCondition,
       purchaseId: this.material.purchaseId
     });
@@ -85,7 +75,7 @@ export class MaterialFormComponent implements OnInit {
     }
 
     this.isLoading = true;
-    const formValue: MaterialFormData = this.form.value;
+    const formValue: MaterialCreateData = this.form.value;
 
     if (this.isEditMode && this.material) {
       this.updateMaterial(formValue);
@@ -94,7 +84,7 @@ export class MaterialFormComponent implements OnInit {
     }
   }
 
-  createMaterial(formData: MaterialFormData): void {
+  createMaterial(formData: MaterialCreateData): void {
     this.materialService.addMaterial(formData).subscribe({
       next: (result) => {
         this.isLoading = false;
@@ -108,7 +98,7 @@ export class MaterialFormComponent implements OnInit {
     });
   }
 
-  updateMaterial(formData: MaterialFormData): void {
+  updateMaterial(formData: MaterialCreateData): void {
     if (!this.material) return;
 
     this.materialService.updateMaterial(this.material.id, formData).subscribe({

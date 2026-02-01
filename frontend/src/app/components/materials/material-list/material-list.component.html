@@ -84,7 +84,7 @@
                 Catégorie
               </span>
               <span class="info-value">
-                {{ getCategoryName(m.category) }}
+                {{ getCategoryName(m) }}
               </span>
             </div>
 
@@ -127,6 +127,13 @@
 
           <!-- Actions -->
           <div class="card-footer">
+            <button
+              class="btn btn-sm btn-primary"
+              (click)="viewMaterialDetail(m)"
+              title="Voir les détails"
+            >
+              <i class="fa fa-eye"></i> Détails
+            </button>
             <button
               class="btn btn-sm btn-info"
               (click)="openStatusChangeModal(m)"

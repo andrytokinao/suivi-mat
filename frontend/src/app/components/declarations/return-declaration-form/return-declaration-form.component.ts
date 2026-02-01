@@ -1,49 +1,74 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import {FormBuilder, FormsModule} from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DeclarationService } from '../../../services/declaration.service';
 import { MaterialService } from '../../../services/material.service';
 import { Material } from '../../../models/material';
 import { MaterialCondition } from '../../../models/enums';
+import { OutgoingDeclaration, MaterialMovement } from '../../../models/declaration';
 import { Subject, takeUntil } from 'rxjs';
+
+interface MaterialToReturn {
+  movement: MaterialMovement;
+  material: Material | null;
+  selected: boolean;
+  returnCondition: MaterialCondition;
+  returnQuantity: number;
+  note: string;
+}
 
 @Component({
   selector: 'app-return-declaration-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './return-declaration-form.component.html',
   styleUrls: ['./return-declaration-form.component.css']
 })
 export class ReturnDeclarationFormComponent implements OnInit, OnDestroy {
-  form!: FormGroup;
-  submitted = false;
-  isLoading = false;
+  step: number = 1;
+
+  // Step 1: Select outgoing declaration
+  outgoingDeclarations: OutgoingDeclaration[] = [];
+  selectedOutgoingDeclaration: OutgoingDeclaration | null = null;
+
+  // Step 2: Select materials to return
+  materialsToReturn: MaterialToReturn[] = [];
   availableMaterials: Material[] = [];
+
+  // Step 3: Form data
+  declaredBy: string = '';
+  returnConditionNote: string = '';
+  verifiedBy: string = '';
+  note: string = '';
+
   conditions = Object.values(MaterialCondition);
 
+  isLoading = false;
+  loadingMessage = '';
   error: string | null = null;
+  successMessage: string | null = null;
 
   private destroy$ = new Subject<void>();
-
-  get materials(): FormArray {
-    return this.form.get('materials') as FormArray;
-  }
-
-  get f() {
-    return this.form.controls;
-  }
 
   constructor(
     private fb: FormBuilder,
     private declarationService: DeclarationService,
     private materialService: MaterialService,
     private router: Router
-  ) {
-    this.initForm();
-  }
+  ) {}
 
   ngOnInit(): void {
+    this.loadOutgoingDeclarations();
     this.loadAvailableMaterials();
   }
 
@@ -52,14 +77,22 @@ export class ReturnDeclarationFormComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private initForm(): void {
-    this.form = this.fb.group({
-      declaredBy: ['', [Validators.required, Validators.minLength(2)]],
-      returnConditionNote: ['', Validators.required],
-      verifiedBy: [''],
-      note: ['', Validators.maxLength(500)],
-      materials: this.fb.array([], Validators.required)
-    });
+  private loadOutgoingDeclarations(): void {
+    this.isLoading = true;
+    this.loadingMessage = 'Chargement des déclarations...';
+
+    this.declarationService.getOutgoingDeclarationsNotReturned()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (declarations) => {
+          this.outgoingDeclarations = declarations;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.error = 'Erreur lors du chargement des déclarations: ' + err.message;
+          this.isLoading = false;
+        }
+      });
   }
 
   private loadAvailableMaterials(): void {
@@ -70,47 +103,93 @@ export class ReturnDeclarationFormComponent implements OnInit, OnDestroy {
           this.availableMaterials = materials;
         },
         error: (err) => {
-          this.error = 'Erreur lors du chargement des matériels: ' + err.message;
+          console.error('Error loading materials:', err);
         }
       });
   }
 
-  addMaterial(): void {
-    const group = this.fb.group({
-      material: [null, Validators.required],
-      quantity: [1, [Validators.required, Validators.min(1)]],
-      condition: [MaterialCondition.GOOD, Validators.required],
-      note: ['']
-    });
-    this.materials.push(group);
+  selectOutgoingDeclaration(declaration: OutgoingDeclaration): void {
+    this.selectedOutgoingDeclaration = declaration;
+
+    // Load movements for this declaration
+    if (declaration.movements) {
+      this.setupMaterialsToReturn(declaration.movements);
+    } else {
+      this.declarationService.getDeclarationMovements(declaration.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (movements) => {
+            this.setupMaterialsToReturn(movements);
+          },
+          error: (err) => {
+            this.error = 'Erreur lors du chargement des mouvements: ' + err.message;
+          }
+        });
+    }
   }
 
-  removeMaterial(index: number): void {
-    this.materials.removeAt(index);
+  private setupMaterialsToReturn(movements: MaterialMovement[]): void {
+    this.materialsToReturn = movements.map(m => ({
+      movement: m,
+      material: this.availableMaterials.find(mat => mat.id === m.materialId) || null,
+      selected: true,
+      returnCondition: m.condition || MaterialCondition.GOOD,
+      returnQuantity: m.quantity,
+      note: ''
+    }));
+  }
+
+  toggleMaterialSelection(item: MaterialToReturn): void {
+    item.selected = !item.selected;
+  }
+
+  get selectedMaterialsCount(): number {
+    return this.materialsToReturn.filter(m => m.selected).length;
+  }
+
+  nextStep(): void {
+    if (this.step === 1 && this.selectedOutgoingDeclaration) {
+      this.step = 2;
+      this.error = null;
+    } else if (this.step === 2 && this.selectedMaterialsCount > 0) {
+      this.step = 3;
+      this.error = null;
+    }
+  }
+
+  previousStep(): void {
+    if (this.step > 1) {
+      this.step--;
+      this.error = null;
+    }
+  }
+
+  canSubmit(): boolean {
+    return !!this.declaredBy && !!this.returnConditionNote && this.selectedMaterialsCount > 0;
   }
 
   submit(): void {
-    this.submitted = true;
-
-    if (this.form.invalid || this.materials.length === 0) {
-      this.error = 'Veuillez remplir tous les champs requis et ajouter au moins un matériel';
+    if (!this.canSubmit()) {
+      this.error = 'Veuillez remplir tous les champs requis';
       return;
     }
 
     this.isLoading = true;
+    this.loadingMessage = 'Création de la déclaration de retour...';
     this.error = null;
 
-    const formValue = this.form.value;
+    const selectedMaterials = this.materialsToReturn.filter(m => m.selected);
+
     const declarationData = {
-      declaredBy: formValue.declaredBy,
-      returnConditionNote: formValue.returnConditionNote,
-      verifiedBy: formValue.verifiedBy || null,
-      note: formValue.note || null,
-      movements: formValue.materials.map((m: any) => ({
-        material: m.material,
-        quantity: m.quantity,
-        condition: m.condition,
-        note: m.note || null
+      declaredBy: this.declaredBy,
+      returnConditionNote: this.returnConditionNote,
+      verifiedBy: this.verifiedBy || '',
+      note: this.note || null,
+      movements: selectedMaterials.map(sm => ({
+        material: sm.movement.materialId!,
+        quantity: sm.returnQuantity,
+        condition: sm.returnCondition,
+        note: sm.note || null
       }))
     };
 
@@ -119,29 +198,30 @@ export class ReturnDeclarationFormComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.isLoading = false;
-          alert('Déclaration de retour créée avec succès!');
-          this.router.navigate(['/declarations/list']);
+          this.successMessage = 'Déclaration de retour créée avec succès!';
+          setTimeout(() => {
+            this.router.navigate(['/declarations/list']);
+          }, 1500);
         },
         error: (error) => {
           this.isLoading = false;
-          this.error = 'Erreur lors de la création: ' + error.message;
+          this.error = 'Erreur lors de la création: ' + (error.message || 'Erreur inconnue');
           console.error('Error creating declaration:', error);
         }
       });
   }
 
   cancel(): void {
-    if (confirm('Êtes-vous sûr de vouloir annuler? Les données seront perdues.')) {
-      this.router.navigate(['/declarations/list']);
-    }
+    this.router.navigate(['/declarations/list']);
   }
 
   clearError(): void {
     this.error = null;
   }
 
-  getMaterialName(materialId: number): string {
-    return this.availableMaterials.find(m => m.id === materialId)?.name || 'Unknown';
+  getMaterialName(materialId: number | null): string {
+    if (!materialId) return 'Matériel inconnu';
+    return this.availableMaterials.find(m => m.id === materialId)?.name || 'Matériel inconnu';
   }
 
   getConditionLabel(condition: MaterialCondition): string {
@@ -152,5 +232,24 @@ export class ReturnDeclarationFormComponent implements OnInit, OnDestroy {
       [MaterialCondition.IN_REPAIR]: 'En réparation'
     };
     return labels[condition] || condition;
+  }
+
+  getConditionClass(condition: MaterialCondition): string {
+    const classes: Record<MaterialCondition, string> = {
+      [MaterialCondition.GOOD]: 'badge-good',
+      [MaterialCondition.DAMAGED]: 'badge-damaged',
+      [MaterialCondition.BROKEN]: 'badge-broken',
+      [MaterialCondition.IN_REPAIR]: 'badge-repair'
+    };
+    return classes[condition] || '';
+  }
+
+  formatDate(dateString: string | null): string {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   }
 }

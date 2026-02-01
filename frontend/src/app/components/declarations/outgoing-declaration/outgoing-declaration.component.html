@@ -1,12 +1,20 @@
 <div class="container">
+  <!-- Header avec navigation retour -->
   <div class="header">
+    <button class="back-btn" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Retour
+    </button>
     <h1>Nouvelle Déclaration de Sortie</h1>
     <div class="steps">
       <div class="step" [class.active]="step === 1" [class.completed]="step > 1">
-        <div class="step-number">1</div>
+        <div class="step-number">
+          <mat-icon *ngIf="step > 1">check</mat-icon>
+          <span *ngIf="step <= 1">1</span>
+        </div>
         <div class="step-label">Sélection Matériel</div>
       </div>
-      <div class="step-line"></div>
+      <div class="step-line" [class.active]="step > 1"></div>
       <div class="step" [class.active]="step === 2">
         <div class="step-number">2</div>
         <div class="step-label">Informations</div>
@@ -14,106 +22,176 @@
     </div>
   </div>
 
+  <!-- Messages d'erreur et de succès -->
+  <div *ngIf="error" class="alert alert-danger">
+    <mat-icon>error</mat-icon>
+    <span>{{ error }}</span>
+    <button class="close-btn" (click)="clearError()">×</button>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    <mat-icon>check_circle</mat-icon>
+    <span>{{ successMessage }}</span>
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="isLoading" class="loading-overlay">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Chargement en cours...</p>
+  </div>
+
   <!-- Étape 1: Sélection du matériel -->
-  <div *ngIf="step === 1" class="step-content">
+  <div *ngIf="step === 1 && !isLoading" class="step-content">
     <div class="filters">
       <div class="search-box">
         <app-menue-category></app-menue-category>
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          placeholder="Rechercher par nom ou numéro de série..."
-          class="search-input">
+        <div class="search-input-container">
+          <mat-icon class="search-icon">search</mat-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="applyFilters()"
+            placeholder="Rechercher par nom ou numéro de série..."
+            class="search-input">
+        </div>
       </div>
-
-
     </div>
 
-    <div class="materials-grid">
-      <div
-        *ngFor="let material of filteredMaterials"
-        class="material-card"
-        [class.selected]="isMaterialSelected(material)"
-        (click)="toggleMaterial(material)">
-        <div class="material-checkbox">
-          <input
-            type="checkbox"
-            [checked]="isMaterialSelected(material)"
-            (click)="$event.stopPropagation()">
-        </div>
-        <div class="material-info">
-          <h3>{{ material.name }}</h3>
-          <p class="serial">SN: {{ material.serialNumber }}</p>
-          <p class="category">{{ getCategoryName(material.category) }}</p>
-          <div class="material-meta">
-            <span class="badge badge-success">{{ material.currentCondition }}</span>
-            <span *ngIf="material.quantifiable" class="quantity">Qté: {{ material.quantity }}</span>
+    <div class="materials-section">
+      <h3 class="section-title">
+        <mat-icon>inventory_2</mat-icon>
+        Matériels disponibles ({{ filteredMaterials.length }})
+      </h3>
+
+      <div *ngIf="filteredMaterials.length === 0" class="empty-state">
+        <mat-icon>inbox</mat-icon>
+        <p>Aucun matériel disponible trouvé</p>
+      </div>
+
+      <div class="materials-grid">
+        <div
+          *ngFor="let material of filteredMaterials"
+          class="material-card"
+          [class.selected]="isMaterialSelected(material)"
+          (click)="toggleMaterial(material)">
+          <div class="material-checkbox">
+            <mat-icon *ngIf="isMaterialSelected(material)">check_box</mat-icon>
+            <mat-icon *ngIf="!isMaterialSelected(material)">check_box_outline_blank</mat-icon>
+          </div>
+          <div class="material-info">
+            <h3>{{ material.name }}</h3>
+            <p class="serial">
+              <mat-icon>qr_code</mat-icon>
+              SN: {{ material.serialNumber }}
+            </p>
+            <p class="category">
+              <mat-icon>folder</mat-icon>
+              {{ getCategoryName(material) }}
+            </p>
+            <div class="material-meta">
+              <span class="badge" [class]="'badge-' + (material.currentCondition?.toLowerCase() || 'good')">
+                {{ material.currentCondition ? getConditionLabel(material.currentCondition) : 'Bon état' }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <div *ngIf="selectedMaterials.length > 0" class="selected-materials">
-      <h3>Matériels sélectionnés ({{ selectedMaterials.length }})</h3>
+      <h3>
+        <mat-icon>shopping_cart</mat-icon>
+        Matériels sélectionnés ({{ selectedMaterials.length }})
+      </h3>
       <div class="selected-list">
         <div *ngFor="let sm of selectedMaterials" class="selected-item">
           <span class="material-name">{{ sm.material.name }}</span>
-          <div class="quantity-controls" *ngIf="sm.material.quantifiable">
-            <button (click)="updateQuantity(sm.material.id, sm.quantity - 1)">-</button>
+          <div class="quantity-controls">
+            <button class="qty-btn" (click)="updateQuantity(sm.material.id, sm.quantity - 1)">
+              <mat-icon>remove</mat-icon>
+            </button>
             <input
               type="number"
               [value]="sm.quantity"
-              (change)="updateQuantity(sm.material.id, +sm.quantity)"
+              (change)="updateQuantity(sm.material.id, +$any($event.target).value)"
               min="1">
-            <button (click)="updateQuantity(sm.material.id, sm.quantity + 1)">+</button>
+            <button class="qty-btn" (click)="updateQuantity(sm.material.id, sm.quantity + 1)">
+              <mat-icon>add</mat-icon>
+            </button>
           </div>
-          <button class="remove-btn" (click)="removeMaterial(sm.material.id)">×</button>
+          <button class="remove-btn" (click)="removeMaterial(sm.material.id)">
+            <mat-icon>close</mat-icon>
+          </button>
         </div>
       </div>
     </div>
 
     <div class="actions">
+      <button class="btn btn-secondary" (click)="goBack()">
+        <mat-icon>cancel</mat-icon>
+        Annuler
+      </button>
       <button
         class="btn btn-primary"
         [disabled]="selectedMaterials.length === 0"
         (click)="nextStep()">
         Suivant
+        <mat-icon>arrow_forward</mat-icon>
       </button>
     </div>
   </div>
 
   <!-- Étape 2: Informations de la déclaration -->
-  <div *ngIf="step === 2" class="step-content">
+  <div *ngIf="step === 2 && !isLoading" class="step-content">
     <form class="declaration-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>
+            <mat-icon>person</mat-icon>
+            Déclarant *
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="declaredBy"
+            name="declaredBy"
+            placeholder="Votre nom complet"
+            required
+            [class.invalid]="!declaredBy">
+          <span class="helper-text" *ngIf="!declaredBy">Ce champ est obligatoire</span>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <mat-icon>event</mat-icon>
+            Date de retour prévue
+          </label>
+          <input
+            type="date"
+            [(ngModel)]="expectedReturnDate"
+            name="expectedReturnDate">
+        </div>
+      </div>
+
       <div class="form-group">
-        <label>Objet de l'utilisation *</label>
+        <label>
+          <mat-icon>description</mat-icon>
+          Objet de l'utilisation *
+        </label>
         <input
           type="text"
           [(ngModel)]="usagePurpose"
           name="usagePurpose"
           placeholder="Ex: Projet X, Formation, etc."
-          required>
+          required
+          [class.invalid]="!usagePurpose">
+        <span class="helper-text" *ngIf="!usagePurpose">Ce champ est obligatoire</span>
       </div>
 
       <div class="form-group">
-        <label>Date de retour prévue</label>
-        <input
-          type="date"
-          [(ngModel)]="expectedReturnDate"
-          name="expectedReturnDate">
-      </div>
-
-      <div class="form-group">
-        <label>Note</label>
-        <textarea
-          [(ngModel)]="note"
-          name="note"
-          rows="4"
-          placeholder="Informations complémentaires..."></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Informations additionnelles</label>
+        <label>
+          <mat-icon>location_on</mat-icon>
+          Informations additionnelles
+        </label>
         <input
           type="text"
           [(ngModel)]="additionalInfo"
@@ -121,23 +199,57 @@
           placeholder="Ex: Bureau 205, Salle A, etc.">
       </div>
 
+      <div class="form-group">
+        <label>
+          <mat-icon>notes</mat-icon>
+          Note
+        </label>
+        <textarea
+          [(ngModel)]="note"
+          name="note"
+          rows="3"
+          placeholder="Informations complémentaires..."></textarea>
+      </div>
+
       <div class="summary">
-        <h3>Récapitulatif</h3>
-        <ul>
-          <li *ngFor="let sm of selectedMaterials">
-            {{ sm.material.name }}
-            <span *ngIf="sm.material.quantifiable">(x{{ sm.quantity }})</span>
-          </li>
-        </ul>
+        <h3>
+          <mat-icon>summarize</mat-icon>
+          Récapitulatif
+        </h3>
+        <div class="summary-content">
+          <div class="summary-item" *ngIf="declaredBy">
+            <strong>Déclarant:</strong> {{ declaredBy }}
+          </div>
+          <div class="summary-item" *ngIf="usagePurpose">
+            <strong>Objet:</strong> {{ usagePurpose }}
+          </div>
+          <div class="summary-item" *ngIf="expectedReturnDate">
+            <strong>Retour prévu:</strong> {{ expectedReturnDate }}
+          </div>
+          <div class="summary-materials">
+            <strong>Matériels ({{ selectedMaterials.length }}):</strong>
+            <ul>
+              <li *ngFor="let sm of selectedMaterials">
+                <mat-icon>inventory_2</mat-icon>
+                {{ sm.material.name }}
+                <span class="qty">(x{{ sm.quantity }})</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </form>
 
     <div class="actions">
-      <button class="btn btn-secondary" (click)="previousStep()">Retour</button>
+      <button class="btn btn-secondary" (click)="previousStep()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
       <button
         class="btn btn-primary"
-        [disabled]="!usagePurpose"
+        [disabled]="!canSubmit() || isLoading"
         (click)="submit()">
+        <mat-icon>send</mat-icon>
         Créer la déclaration
       </button>
     </div>

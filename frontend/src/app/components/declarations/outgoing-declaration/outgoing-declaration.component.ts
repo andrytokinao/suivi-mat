@@ -7,6 +7,9 @@ import { CategoryService } from '../../../services/category.service';
 import { DeclarationService } from '../../../services/declaration.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MenueCategoryComponent } from '../../../shared/menue-category/menue-category.component';
 import { MaterialCondition, MaterialStatus } from '../../../models/enums';
 import { Subject, takeUntil } from 'rxjs';
@@ -23,6 +26,9 @@ interface SelectedMaterial {
   imports: [
     FormsModule,
     CommonModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
     MenueCategoryComponent
   ],
   templateUrl: './outgoing-declaration.component.html',
@@ -46,6 +52,7 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
 
   isLoading = false;
   error: string | null = null;
+  successMessage: string | null = null;
 
   private destroy$ = new Subject<void>();
 
@@ -68,15 +75,18 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
   }
 
   private loadMaterials(): void {
+    this.isLoading = true;
     this.materialService.getMaterials()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (materials) => {
           this.materials = materials;
           this.applyFilters();
+          this.isLoading = false;
         },
         error: (err) => {
           this.error = 'Erreur lors du chargement des matériels: ' + err.message;
+          this.isLoading = false;
         }
       });
   }
@@ -109,9 +119,8 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
         m.name?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         m.serialNumber?.toLowerCase().includes(this.searchTerm.toLowerCase());
 
-      const categoryId = typeof m.category === 'number' ? m.category : (m.category as any)?.id;
       const matchCategory = this.selectedCategories.size === 0 ||
-        (categoryId && this.selectedCategories.has(categoryId));
+        (m.categoryId && this.selectedCategories.has(m.categoryId));
 
       const isAvailable = m.status === MaterialStatus.AVAILABLE;
 
@@ -151,22 +160,34 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
   nextStep(): void {
     if (this.step === 1 && this.selectedMaterials.length > 0) {
       this.step = 2;
+      this.error = null;
     }
   }
 
   previousStep(): void {
     if (this.step === 2) {
       this.step = 1;
+      this.error = null;
     }
+  }
+
+  canSubmit(): boolean {
+    return !!this.usagePurpose && !!this.declaredBy && this.selectedMaterials.length > 0;
   }
 
   submit(): void {
     if (!this.usagePurpose || !this.declaredBy) {
-      this.error = 'Veuillez remplir tous les champs requis';
+      this.error = 'Veuillez remplir tous les champs requis (Déclarant et Objet de l\'utilisation)';
+      return;
+    }
+
+    if (this.selectedMaterials.length === 0) {
+      this.error = 'Veuillez sélectionner au moins un matériel';
       return;
     }
 
     this.isLoading = true;
+    this.error = null;
 
     const declarationData = {
       declaredBy: this.declaredBy,
@@ -186,23 +207,35 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.isLoading = false;
-          alert('Déclaration de sortie créée avec succès!');
-          this.router.navigate(['/declarations/list']);
+          this.successMessage = 'Déclaration de sortie créée avec succès!';
+          setTimeout(() => {
+            this.router.navigate(['/declarations/list']);
+          }, 1500);
         },
         error: (error) => {
           this.isLoading = false;
-          this.error = 'Erreur lors de la création: ' + error.message;
+          this.error = 'Erreur lors de la création: ' + (error.message || 'Erreur inconnue');
           console.error('Error creating declaration:', error);
         }
       });
   }
 
-  getCategoryName(category: any): string {
-    if (!category) return 'Non catégorisé';
-    if (typeof category === 'number') {
-      return this.categories.find(c => c.id === category)?.name || 'Non catégorisé';
+  getCategoryName(material: Material): string {
+    if (material.categoryName) return material.categoryName;
+    if (material.categoryId) {
+      return this.categories.find(c => c.id === material.categoryId)?.name || 'Non catégorisé';
     }
-    return (category as any).name || 'Non catégorisé';
+    return 'Non catégorisé';
+  }
+
+  getConditionLabel(condition: MaterialCondition): string {
+    switch (condition) {
+      case MaterialCondition.GOOD: return 'Bon';
+      case MaterialCondition.DAMAGED: return 'Endommagé';
+      case MaterialCondition.BROKEN: return 'Cassé';
+      case MaterialCondition.IN_REPAIR: return 'En réparation';
+      default: return condition;
+    }
   }
 
   goBack(): void {
@@ -211,5 +244,9 @@ export class OutgoingDeclarationComponent implements OnInit, OnDestroy {
 
   clearError(): void {
     this.error = null;
+  }
+
+  clearSuccess(): void {
+    this.successMessage = null;
   }
 }

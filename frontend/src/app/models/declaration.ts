@@ -1,35 +1,41 @@
 import { DeclarationStatus, MovementStatus, MaterialCondition } from './enums';
 
+// Base Declaration interface matching DeclarationDTO
 export interface Declaration {
   id: number;
-  declarationType: 'OUTGOING' | 'RETURN';
+  declarationType: 'SORTIE' | 'RETOUR';
   declarationDate: string;
   declaredBy: string;
   validateBy: string | null;
   status: DeclarationStatus;
   note: string | null;
-  additionalInfo?: string;
 }
 
+// OutgoingDeclaration matching OutgoingDeclarationDTO
 export interface OutgoingDeclaration extends Declaration {
-  declarationType: 'OUTGOING';
+  declarationType: 'SORTIE';
   usagePurpose: string;
   validatedBy: string | null;
-  movements: MaterialMovement[];
+  movementIds: number[];
+  movements?: MaterialMovement[]; // Optional, populated when fetched separately
 }
 
+// ReturnDeclaration matching ReturnDeclarationDTO
 export interface ReturnDeclaration extends Declaration {
-  declarationType: 'RETURN';
+  declarationType: 'RETOUR';
   returnConditionNote: string;
   verifiedBy: string | null;
   verifiedAt: string | null;
-  movements: MaterialMovement[];
+  movementIds: number[];
+  movements?: MaterialMovement[]; // Optional, populated when fetched separately
 }
 
+// MaterialMovement matching MaterialMovementDTO
 export interface MaterialMovement {
   id: number;
-  material: number | null;
-  materialName?: string;
+  materialId: number | null;
+  materialName: string | null;
+  materialSerialNumber: string | null;
   quantity: number;
   condition: MaterialCondition;
   status: MovementStatus;
@@ -39,9 +45,8 @@ export interface MaterialMovement {
   validatedBy: string | null;
   verifiedBy: string | null;
   movementDate: string | null;
-  outgoingDeclaration: number | null;
-  returnDeclaration: number | null;
-  note?: string | null;
+  outgoingDeclarationId: number | null;
+  returnDeclarationId: number | null;
 }
 
 export interface OutgoingDeclarationFormData {

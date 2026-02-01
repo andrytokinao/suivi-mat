@@ -1,15 +1,11 @@
 package com.kinga.suivimat.entity;
 
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * SuiviMat – Gestion du matériel d'entreprise
@@ -36,7 +32,6 @@ public class Material {
     private MaterialState.MaterialStatus status;
 
     @ManyToOne
-    @JsonBackReference
     private MaterialCategory category;
 
     private String purchaseId; // Lien vers gestion des achats
@@ -45,16 +40,13 @@ public class Material {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<MaterialMovement> movements;
+    private Set<MaterialMovement> movements = new HashSet<>();
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<MaterialState> states;
+    private Set<MaterialState> states = new HashSet<>();
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Maintenance> maintenances;
+    private Set<Maintenance> maintenances = new HashSet<>();
 
 
     @Enumerated(EnumType.STRING)

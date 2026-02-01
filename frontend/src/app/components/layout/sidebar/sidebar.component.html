@@ -1,36 +1,52 @@
 <div class="sidebar">
   <!-- Header -->
   <div class="sidebar-header">
-    <h2>SuiviMat</h2>
-    <p class="text-sm text-gray-400">Gestion de Matériel</p>
+    <div class="logo-container">
+      <mat-icon class="logo-icon">inventory</mat-icon>
+      <div class="logo-text">
+        <h2>SuiviMat</h2>
+        <p class="text-sm">Gestion de Matériel</p>
+      </div>
+    </div>
   </div>
 
   <!-- Navigation Menu -->
   <nav class="sidebar-nav">
     <div *ngFor="let item of menuItems" class="menu-item-group">
-      <!-- Main Menu Item -->
+      <!-- Main Menu Item (with or without children) -->
       <div
         class="menu-item"
         [class.has-children]="hasChildren(item)"
         [class.expanded]="isExpanded(item.label)"
-        (click)="hasChildren(item) ? toggleExpand(item.label) : navigate(item.route)">
-        <span class="menu-icon">{{ item.icon }}</span>
+        [class.active]="!hasChildren(item) && isActiveRoute(item.route)"
+        [class.parent-active]="isParentActive(item)"
+        (click)="hasChildren(item) ? toggleExpand(item.label) : navigate(item.route)"
+        [matTooltip]="item.label"
+        matTooltipPosition="right"
+        [matTooltipDisabled]="true">
+        <mat-icon class="menu-icon">{{ item.icon }}</mat-icon>
         <span class="menu-label">{{ item.label }}</span>
-        <span *ngIf="hasChildren(item)" class="expand-icon">
-          {{ isExpanded(item.label) ? '▼' : '▶' }}
-        </span>
+        <mat-icon
+          *ngIf="hasChildren(item)"
+          class="expand-icon"
+          [@rotateIcon]="isExpanded(item.label) ? 'expanded' : 'collapsed'">
+          expand_more
+        </mat-icon>
       </div>
 
-      <!-- Submenu Items -->
+      <!-- Submenu Items with animation -->
       <div
-        *ngIf="hasChildren(item) && isExpanded(item.label)"
-        class="submenu">
+        *ngIf="hasChildren(item)"
+        class="submenu"
+        [@expandCollapse]="isExpanded(item.label) ? 'expanded' : 'collapsed'">
         <div
           *ngFor="let child of item.children"
           class="submenu-item"
+          [class.active]="isActiveRoute(child.route)"
           (click)="navigate(child.route)">
-          <span class="submenu-icon">{{ child.icon }}</span>
+          <mat-icon class="submenu-icon">{{ child.icon }}</mat-icon>
           <span class="submenu-label">{{ child.label }}</span>
+          <span class="active-indicator" *ngIf="isActiveRoute(child.route)"></span>
         </div>
       </div>
     </div>
@@ -39,8 +55,14 @@
   <!-- Footer -->
   <div class="sidebar-footer">
     <div class="user-info">
-      <span class="user-icon">👤</span>
-      <span class="user-name">Utilisateur</span>
+      <div class="user-avatar">
+        <mat-icon>person</mat-icon>
+      </div>
+      <div class="user-details">
+        <span class="user-name">Utilisateur</span>
+        <span class="user-role">Administrateur</span>
+      </div>
+      <mat-icon class="settings-icon" matTooltip="Paramètres">settings</mat-icon>
     </div>
   </div>
 </div>

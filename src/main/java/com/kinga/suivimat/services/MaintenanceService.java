@@ -4,6 +4,8 @@ import com.kinga.suivimat.entity.Maintenance;
 import com.kinga.suivimat.repository.MaintenanceRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class MaintenanceService extends BaseService<Maintenance, Long> {
 
@@ -19,5 +21,13 @@ public class MaintenanceService extends BaseService<Maintenance, Long> {
                 .orElseThrow(() -> new RuntimeException("Maintenance not found"));
         maintenance.setStatus(status);
         return save(maintenance);
+    }
+
+    public List<Maintenance> findByMaterialId(Long materialId) {
+        return maintenanceRepository.findByMaterialId(materialId);
+    }
+
+    public List<Maintenance> findByMaterialIdOrderByStartDateDesc(Long materialId) {
+        return maintenanceRepository.findByMaterialIdOrderByStartDateDesc(materialId);
     }
 }

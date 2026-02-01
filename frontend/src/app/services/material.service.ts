@@ -1,10 +1,20 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { tap, catchError, finalize, map } from 'rxjs/operators';
-import { Material, MaterialFormData, MaterialState } from '../models/material';
-import { MaterialStatus, MaterialCondition } from '../models/enums';
+import { tap, catchError, finalize } from 'rxjs/operators';
+import {
+  Material,
+  MaterialFormData,
+  MaterialCreateData,
+  MaterialFullDetail,
+  MaterialState,
+  MaterialStateFormData,
+  Maintenance,
+  MaintenanceFormData
+} from '../models/material';
+import { MaterialStatus, MaterialCondition, MaintenanceStatus } from '../models/enums';
 import { ApiService } from './api.service';
 import { MaterialCategory } from '../models/category';
+import { MaterialMovement } from '../models/declaration';
 
 @Injectable({
   providedIn: 'root'
@@ -23,9 +33,8 @@ export class MaterialService {
     this.loadMaterials();
   }
 
-  /**
-   * Load all materials from API
-   */
+  // ============== MATERIALS CRUD ==============
+
   loadMaterials(): void {
     this.isLoading$.next(true);
     this.apiService.get<Material[]>('/materials')
@@ -43,39 +52,21 @@ export class MaterialService {
       .subscribe();
   }
 
-  /**
-   * Get all materials
-   */
   getMaterials(): Observable<Material[]> {
     return this.materials$;
   }
 
-  /**
-   * Get material by ID
-   */
   getMaterialById(id: number): Observable<Material> {
     return this.apiService.get<Material>(`/materials/${id}`);
   }
 
-  /**
-   * Create new material
-   */
-  addMaterial(materialData: MaterialFormData): Observable<Material> {
+  getMaterialFullDetails(id: number): Observable<MaterialFullDetail> {
+    return this.apiService.get<MaterialFullDetail>(`/materials/${id}/full-details`);
+  }
+
+  addMaterial(materialData: MaterialCreateData): Observable<Material> {
     this.isLoading$.next(true);
-
-    // Transform form data to match backend expectations
-    const payload: any = {
-      name: materialData.name,
-      reference: materialData.reference,
-      serialNumber: materialData.serialNumber,
-      description: materialData.description,
-      status: materialData.status,
-      currentCondition: materialData.currentCondition,
-      purchaseId: materialData.purchaseId,
-      category: materialData.category ? { id: materialData.category } : null
-    };
-
-    return this.apiService.post<Material>('/materials', payload)
+    return this.apiService.post<Material>('/materials', materialData)
       .pipe(
         tap(newMaterial => {
           const currentMaterials = this.materialsSubject.value;
@@ -90,19 +81,9 @@ export class MaterialService {
       );
   }
 
-  /**
-   * Update material
-   */
-  updateMaterial(id: number, materialData: Partial<MaterialFormData>): Observable<Material> {
+  updateMaterial(id: number, materialData: Partial<Material>): Observable<Material> {
     this.isLoading$.next(true);
-
-    // Transform form data to match backend expectations
-    const payload: any = { ...materialData };
-    if (materialData.category !== undefined) {
-      payload.category = materialData.category ? { id: materialData.category } : null;
-    }
-
-    return this.apiService.put<Material>(`/materials/${id}`, payload)
+    return this.apiService.put<Material>(`/materials/${id}`, materialData)
       .pipe(
         tap(updatedMaterial => {
           const currentMaterials = this.materialsSubject.value;
@@ -121,9 +102,6 @@ export class MaterialService {
       );
   }
 
-  /**
-   * Delete material
-   */
   deleteMaterial(id: number): Observable<void> {
     this.isLoading$.next(true);
     return this.apiService.delete<void>(`/materials/${id}`)
@@ -141,49 +119,126 @@ export class MaterialService {
       );
   }
 
-  /**
-   * Get available materials
-   */
-  getAvailableMaterials(): Observable<Material[]> {
-    return this.materials$.pipe(
-      map(materials => materials.filter(m => m.status === MaterialStatus.AVAILABLE))
-    );
-  }
-
-  /**
-   * Update material status
-   */
-  updateMaterialStatus(id: number, status: MaterialStatus): Observable<Material> {
-    return this.updateMaterial(id, { status });
-  }
-
-  /**
-   * Update material condition
-   */
-  updateMaterialCondition(id: number, condition: MaterialCondition): Observable<Material> {
-    return this.updateMaterial(id, { currentCondition: condition });
-  }
-
-  /**
-   * Get materials by serial number
-   */
   getMaterialBySerialNumber(serialNumber: string): Observable<Material> {
     return this.apiService.get<Material>(`/materials/serial/${serialNumber}`);
   }
 
-  /**
-   * Get root categories
-   */
   getRootCategories(): Observable<MaterialCategory[]> {
     return this.apiService.get<MaterialCategory[]>('/materials/root-categories');
   }
 
-  /**
-   * Get material movements
-   */
-  getMaterialMovements(materialId: number): Observable<any[]> {
-    return this.apiService.get<any[]>(`/materials/${materialId}/movements`);
+  // ============== MOVEMENTS CRUD ==============
+
+  getMaterialMovements(materialId: number): Observable<MaterialMovement[]> {
+    return this.apiService.get<MaterialMovement[]>(`/materials/${materialId}/movements`);
   }
+
+  getMovementById(materialId: number, movementId: number): Observable<MaterialMovement> {
+    return this.apiService.get<MaterialMovement>(`/materials/${materialId}/movements/${movementId}`);
+  }
+
+  createMovement(materialId: number, movement: Partial<MaterialMovement>): Observable<MaterialMovement> {
+    return this.apiService.post<MaterialMovement>(`/materials/${materialId}/movements`, movement);
+  }
+
+  updateMovement(materialId: number, movementId: number, movement: Partial<MaterialMovement>): Observable<MaterialMovement> {
+    return this.apiService.put<MaterialMovement>(`/materials/${materialId}/movements/${movementId}`, movement);
+  }
+
+  deleteMovement(materialId: number, movementId: number): Observable<void> {
+    return this.apiService.delete<void>(`/materials/${materialId}/movements/${movementId}`);
+  }
+
+  createMovementsBatch(materialId: number, movements: Partial<MaterialMovement>[]): Observable<MaterialMovement[]> {
+    return this.apiService.post<MaterialMovement[]>(`/materials/${materialId}/movements/batch`, movements);
+  }
+
+  updateMovementsBatch(materialId: number, movements: Partial<MaterialMovement>[]): Observable<MaterialMovement[]> {
+    return this.apiService.put<MaterialMovement[]>(`/materials/${materialId}/movements/batch`, movements);
+  }
+
+  deleteMovementsBatch(materialId: number, movementIds: number[]): Observable<void> {
+    return this.apiService.delete<void>(`/materials/${materialId}/movements/batch`, movementIds);
+  }
+
+  // ============== MAINTENANCES CRUD ==============
+
+  getMaterialMaintenances(materialId: number): Observable<Maintenance[]> {
+    return this.apiService.get<Maintenance[]>(`/materials/${materialId}/maintenances`);
+  }
+
+  getMaintenanceById(materialId: number, maintenanceId: number): Observable<Maintenance> {
+    return this.apiService.get<Maintenance>(`/materials/${materialId}/maintenances/${maintenanceId}`);
+  }
+
+  createMaintenance(materialId: number, maintenance: MaintenanceFormData): Observable<Maintenance> {
+    return this.apiService.post<Maintenance>(`/materials/${materialId}/maintenances`, maintenance);
+  }
+
+  updateMaintenance(materialId: number, maintenanceId: number, maintenance: Partial<Maintenance>): Observable<Maintenance> {
+    return this.apiService.put<Maintenance>(`/materials/${materialId}/maintenances/${maintenanceId}`, maintenance);
+  }
+
+  deleteMaintenance(materialId: number, maintenanceId: number): Observable<void> {
+    return this.apiService.delete<void>(`/materials/${materialId}/maintenances/${maintenanceId}`);
+  }
+
+  createMaintenancesBatch(materialId: number, maintenances: MaintenanceFormData[]): Observable<Maintenance[]> {
+    return this.apiService.post<Maintenance[]>(`/materials/${materialId}/maintenances/batch`, maintenances);
+  }
+
+  updateMaintenancesBatch(materialId: number, maintenances: Partial<Maintenance>[]): Observable<Maintenance[]> {
+    return this.apiService.put<Maintenance[]>(`/materials/${materialId}/maintenances/batch`, maintenances);
+  }
+
+  deleteMaintenancesBatch(materialId: number, maintenanceIds: number[]): Observable<void> {
+    return this.apiService.delete<void>(`/materials/${materialId}/maintenances/batch`, maintenanceIds);
+  }
+
+  // ============== STATES CRUD ==============
+
+  getMaterialStates(materialId: number): Observable<MaterialState[]> {
+    return this.apiService.get<MaterialState[]>(`/materials/${materialId}/states`);
+  }
+
+  getStateById(materialId: number, stateId: number): Observable<MaterialState> {
+    return this.apiService.get<MaterialState>(`/materials/${materialId}/states/${stateId}`);
+  }
+
+  createState(materialId: number, state: MaterialStateFormData): Observable<MaterialState> {
+    return this.apiService.post<MaterialState>(`/materials/${materialId}/states`, state);
+  }
+
+  updateState(materialId: number, stateId: number, state: Partial<MaterialState>): Observable<MaterialState> {
+    return this.apiService.put<MaterialState>(`/materials/${materialId}/states/${stateId}`, state);
+  }
+
+  deleteState(materialId: number, stateId: number): Observable<void> {
+    return this.apiService.delete<void>(`/materials/${materialId}/states/${stateId}`);
+  }
+
+  createStatesBatch(materialId: number, states: MaterialStateFormData[]): Observable<MaterialState[]> {
+    return this.apiService.post<MaterialState[]>(`/materials/${materialId}/states/batch`, states);
+  }
+
+  updateStatesBatch(materialId: number, states: Partial<MaterialState>[]): Observable<MaterialState[]> {
+    return this.apiService.put<MaterialState[]>(`/materials/${materialId}/states/batch`, states);
+  }
+
+  deleteStatesBatch(materialId: number, stateIds: number[]): Observable<void> {
+    return this.apiService.delete<void>(`/materials/${materialId}/states/batch`, stateIds);
+  }
+
+  // ============== CONVENIENCE METHODS ==============
+
+  updateMaterialStatus(id: number, status: MaterialStatus): Observable<Material> {
+    return this.updateMaterial(id, { status });
+  }
+
+  updateMaterialCondition(id: number, condition: MaterialCondition): Observable<Material> {
+    return this.updateMaterial(id, { currentCondition: condition });
+  }
+
 
   getLoading(): Observable<boolean> {
     return this.isLoading$.asObservable();

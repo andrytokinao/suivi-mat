@@ -9,6 +9,7 @@ import java.util.List;
 @Entity
 @DiscriminatorValue("RETURN")
 @Data @NoArgsConstructor
+@EqualsAndHashCode(callSuper=false)
 @AllArgsConstructor @Builder
 public class ReturnDeclaration extends Declaration {
 

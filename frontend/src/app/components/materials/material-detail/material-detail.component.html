@@ -1,0 +1,517 @@
+<div class="material-detail-container">
+
+  <!-- Header -->
+  <div class="detail-header">
+    <button class="btn btn-outline-secondary" (click)="goBack()">
+      <i class="fa fa-arrow-left"></i> Retour
+    </button>
+    <h1 *ngIf="materialDetail">
+      <i class="fa fa-cube"></i>
+      {{ materialDetail.name }}
+    </h1>
+    <div class="header-actions">
+      <button class="btn btn-success" (click)="openOutgoingDeclarationForm()"
+              [disabled]="!materialDetail || materialDetail.availableQuantity <= 0"
+              title="Créer une déclaration de sortie">
+        <i class="fa fa-sign-out"></i> Déclaration sortie
+      </button>
+      <button class="btn btn-info" (click)="openReturnDeclarationForm()"
+              title="Créer une déclaration de retour">
+        <i class="fa fa-sign-in"></i> Déclaration retour
+      </button>
+      <button class="btn btn-primary" (click)="loadMaterialDetails()" [disabled]="isLoading">
+        <i class="fa fa-refresh" [class.fa-spin]="isLoading"></i> Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error">
+    <i class="fa fa-exclamation-triangle"></i> {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="isLoading && !materialDetail">
+    <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+    <p>Chargement des détails...</p>
+  </div>
+
+  <!-- Content -->
+  <div class="detail-content" *ngIf="materialDetail">
+
+    <!-- Material Info Card -->
+    <div class="info-card">
+      <div class="info-header">
+        <h2>Informations générales</h2>
+        <div class="status-badges">
+          <span class="badge" [ngClass]="getStatusClass(materialDetail.status)">
+            {{ translateStatus(materialDetail.status) }}
+          </span>
+          <span class="badge" [ngClass]="getStatusClass(materialDetail.currentCondition || '')" *ngIf="materialDetail.currentCondition">
+            {{ translateStatus(materialDetail.currentCondition) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Référence</label>
+          <span>{{ materialDetail.reference || 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Numéro de série</label>
+          <span>{{ materialDetail.serialNumber || 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Catégorie</label>
+          <span>{{ materialDetail.category?.name || 'Non catégorisé' }}</span>
+        </div>
+        <div class="info-item">
+          <label>ID d'achat</label>
+          <span>{{ materialDetail.purchaseId || 'N/A' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Quantité disponible</label>
+          <span class="badge" [ngClass]="materialDetail.availableQuantity > 0 ? 'status-success' : 'status-danger'">
+            {{ materialDetail.availableQuantity }}
+          </span>
+        </div>
+        <div class="info-item">
+          <label>Créé le</label>
+          <span>{{ materialDetail.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="info-item" *ngIf="materialDetail.updatedAt">
+          <label>Modifié le</label>
+          <span>{{ materialDetail.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="info-item full-width" *ngIf="materialDetail.description">
+          <label>Description</label>
+          <span>{{ materialDetail.description }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group animationDuration="200ms">
+
+      <!-- Maintenances Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <i class="fa fa-wrench"></i>
+          Maintenances ({{ materialDetail.maintenances.length || 0 }})
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h3>Historique des maintenances</h3>
+            <div class="tab-actions">
+              <button class="btn btn-outline-primary btn-sm" (click)="openBatchMaintenanceForm()">
+                <i class="fa fa-plus-circle"></i> Ajouter en lot
+              </button>
+              <button class="btn btn-primary btn-sm" (click)="openMaintenanceForm()">
+                <i class="fa fa-plus"></i> Nouvelle maintenance
+              </button>
+            </div>
+          </div>
+
+          <!-- Maintenance Form -->
+          <div class="form-panel" *ngIf="showMaintenanceForm">
+            <h4>{{ editingMaintenance ? 'Modifier' : 'Nouvelle' }} maintenance</h4>
+            <form [formGroup]="maintenanceForm" (ngSubmit)="saveMaintenance()">
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Type de maintenance</mat-label>
+                  <input matInput formControlName="maintenanceType" required>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Statut</mat-label>
+                  <mat-select formControlName="status">
+                    <mat-option *ngFor="let s of maintenanceStatuses" [value]="s">
+                      {{ translateStatus(s) }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Date de début</mat-label>
+                  <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+                  <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Date de fin</mat-label>
+                  <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+                  <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #endPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Coût</mat-label>
+                  <input matInput type="number" formControlName="cost">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Effectué par</mat-label>
+                  <input matInput formControlName="performedBy">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput formControlName="description" rows="2"></textarea>
+                </mat-form-field>
+
+                <div class="checkbox-field">
+                  <mat-checkbox formControlName="linkedToCharge">Liée à une charge</mat-checkbox>
+                </div>
+
+                <mat-form-field appearance="outline" *ngIf="maintenanceForm.get('linkedToCharge')?.value">
+                  <mat-label>ID de charge</mat-label>
+                  <input matInput formControlName="chargeId">
+                </mat-form-field>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="closeMaintenanceForm()">Annuler</button>
+                <button type="submit" class="btn btn-primary" [disabled]="maintenanceForm.invalid || isLoading">
+                  {{ editingMaintenance ? 'Modifier' : 'Créer' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Batch Maintenance Form -->
+          <div class="form-panel" *ngIf="showBatchMaintenanceForm">
+            <h4>Ajouter des maintenances en lot</h4>
+            <form [formGroup]="batchMaintenanceForm" (ngSubmit)="saveBatchMaintenances()">
+              <div formArrayName="maintenances">
+                <mat-accordion>
+                  <mat-expansion-panel *ngFor="let ctrl of maintenancesFormArray.controls; let i = index" [formGroupName]="i">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>
+                        Maintenance {{ i + 1 }}: {{ ctrl.get('maintenanceType')?.value || 'Nouveau' }}
+                      </mat-panel-title>
+                      <mat-panel-description>
+                        <button mat-icon-button color="warn" (click)="removeMaintenanceFromArray(i); $event.stopPropagation()" *ngIf="maintenancesFormArray.length > 1">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <div class="form-grid">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Type</mat-label>
+                        <input matInput formControlName="maintenanceType" required>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Statut</mat-label>
+                        <mat-select formControlName="status">
+                          <mat-option *ngFor="let s of maintenanceStatuses" [value]="s">{{ translateStatus(s) }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Date début</mat-label>
+                        <input matInput [matDatepicker]="batchStartPicker" formControlName="startDate">
+                        <mat-datepicker-toggle matIconSuffix [for]="batchStartPicker"></mat-datepicker-toggle>
+                        <mat-datepicker #batchStartPicker></mat-datepicker>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Coût</mat-label>
+                        <input matInput type="number" formControlName="cost">
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Effectué par</mat-label>
+                        <input matInput formControlName="performedBy">
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Description</mat-label>
+                        <textarea matInput formControlName="description" rows="2"></textarea>
+                      </mat-form-field>
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+
+              <div class="batch-actions">
+                <button type="button" class="btn btn-outline-primary" (click)="addMaintenanceToArray()">
+                  <i class="fa fa-plus"></i> Ajouter une maintenance
+                </button>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="closeBatchMaintenanceForm()">Annuler</button>
+                <button type="submit" class="btn btn-primary" [disabled]="batchMaintenanceForm.invalid || isLoading">
+                  Créer {{ maintenancesFormArray.length }} maintenance(s)
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Maintenances List -->
+          <div class="data-list" *ngIf="!showMaintenanceForm && !showBatchMaintenanceForm">
+            <div class="empty-state" *ngIf="materialDetail.maintenances?.length === 0">
+              <i class="fa fa-wrench fa-3x"></i>
+              <p>Aucune maintenance enregistrée</p>
+            </div>
+
+            <div class="data-card" *ngFor="let m of materialDetail.maintenances">
+              <div class="card-main">
+                <div class="card-title">
+                  <strong>{{ m.maintenanceType }}</strong>
+                  <span class="badge" [ngClass]="getStatusClass(m.status)">{{ translateStatus(m.status) }}</span>
+                </div>
+                <div class="card-details">
+                  <span><i class="fa fa-calendar"></i> {{ m.startDate | date:'dd/MM/yyyy' }}</span>
+                  <span *ngIf="m.endDate"><i class="fa fa-calendar-check-o"></i> {{ m.endDate | date:'dd/MM/yyyy' }}</span>
+                  <span *ngIf="m.cost"><i class="fa fa-money"></i> {{ m.cost }} €</span>
+                  <span *ngIf="m.performedBy"><i class="fa fa-user"></i> {{ m.performedBy }}</span>
+                </div>
+                <p class="card-description" *ngIf="m.description">{{ m.description }}</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm btn-outline-primary" (click)="openMaintenanceForm(m)">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteMaintenance(m)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- States Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <i class="fa fa-heartbeat"></i>
+          États ({{ materialDetail.states.length || 0 }})
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h3>Historique des états</h3>
+            <button class="btn btn-primary btn-sm" (click)="openStateForm()">
+              <i class="fa fa-plus"></i> Nouvel état
+            </button>
+          </div>
+
+          <!-- State Form -->
+          <div class="form-panel" *ngIf="showStateForm">
+            <h4>{{ editingState ? 'Modifier' : 'Nouvel' }} état</h4>
+            <form [formGroup]="stateForm" (ngSubmit)="saveState()">
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Condition</mat-label>
+                  <mat-select formControlName="state">
+                    <mat-option *ngFor="let c of materialConditions" [value]="c">
+                      {{ translateStatus(c) }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Mis à jour par</mat-label>
+                  <input matInput formControlName="updatedBy" required>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Description</mat-label>
+                  <textarea matInput formControlName="description" rows="2"></textarea>
+                </mat-form-field>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="closeStateForm()">Annuler</button>
+                <button type="submit" class="btn btn-primary" [disabled]="stateForm.invalid || isLoading">
+                  {{ editingState ? 'Modifier' : 'Créer' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- States List -->
+          <div class="data-list" *ngIf="!showStateForm">
+            <div class="empty-state" *ngIf="materialDetail.states?.length === 0">
+              <i class="fa fa-heartbeat fa-3x"></i>
+              <p>Aucun historique d'état</p>
+            </div>
+
+            <div class="data-card" *ngFor="let s of materialDetail.states">
+              <div class="card-main">
+                <div class="card-title">
+                  <span class="badge" [ngClass]="getStatusClass(s.state)">{{ translateStatus(s.state) }}</span>
+                  <small>{{ s.date | date:'dd/MM/yyyy HH:mm' }}</small>
+                </div>
+                <div class="card-details">
+                  <span *ngIf="s.updatedBy"><i class="fa fa-user"></i> {{ s.updatedBy }}</span>
+                </div>
+                <p class="card-description" *ngIf="s.description">{{ s.description }}</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm btn-outline-primary" (click)="openStateForm(s)">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteState(s)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Movements Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <i class="fa fa-exchange"></i>
+          Mouvements ({{ materialDetail.movements.length || 0 }})
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="tab-header">
+            <h3>Historique des mouvements</h3>
+            <div class="tab-actions">
+              <button class="btn btn-outline-primary btn-sm" (click)="openBatchMovementForm()">
+                <i class="fa fa-plus-circle"></i> Ajouter en lot
+              </button>
+              <button class="btn btn-primary btn-sm" (click)="openMovementForm()">
+                <i class="fa fa-plus"></i> Nouveau mouvement
+              </button>
+            </div>
+          </div>
+
+          <!-- Movement Form -->
+          <div class="form-panel" *ngIf="showMovementForm">
+            <h4>{{ editingMovement ? 'Modifier' : 'Nouveau' }} mouvement</h4>
+            <form [formGroup]="movementForm" (ngSubmit)="saveMovement()">
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Quantité</mat-label>
+                  <input matInput type="number" formControlName="quantity" min="1" required>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Condition</mat-label>
+                  <mat-select formControlName="condition">
+                    <mat-option *ngFor="let c of materialConditions" [value]="c">
+                      {{ translateStatus(c) }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Note</mat-label>
+                  <textarea matInput formControlName="note" rows="2"></textarea>
+                </mat-form-field>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="closeMovementForm()">Annuler</button>
+                <button type="submit" class="btn btn-primary" [disabled]="movementForm.invalid || isLoading">
+                  {{ editingMovement ? 'Modifier' : 'Créer' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Batch Movement Form -->
+          <div class="form-panel" *ngIf="showBatchMovementForm">
+            <h4>Ajouter des mouvements en lot</h4>
+            <form [formGroup]="batchMovementForm" (ngSubmit)="saveBatchMovements()">
+              <div formArrayName="movements">
+                <mat-accordion>
+                  <mat-expansion-panel *ngFor="let ctrl of movementsFormArray.controls; let i = index" [formGroupName]="i">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>
+                        Mouvement {{ i + 1 }}: Quantité {{ ctrl.get('quantity')?.value || 0 }}
+                      </mat-panel-title>
+                      <mat-panel-description>
+                        <button mat-icon-button color="warn" (click)="removeMovementFromArray(i); $event.stopPropagation()" *ngIf="movementsFormArray.length > 1">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <div class="form-grid">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Quantité</mat-label>
+                        <input matInput type="number" formControlName="quantity" min="1" required>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Condition</mat-label>
+                        <mat-select formControlName="condition">
+                          <mat-option *ngFor="let c of materialConditions" [value]="c">{{ translateStatus(c) }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="full-width">
+                        <mat-label>Note</mat-label>
+                        <textarea matInput formControlName="note" rows="2"></textarea>
+                      </mat-form-field>
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+
+              <div class="batch-actions">
+                <button type="button" class="btn btn-outline-primary" (click)="addMovementToArray()">
+                  <i class="fa fa-plus"></i> Ajouter un mouvement
+                </button>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="closeBatchMovementForm()">Annuler</button>
+                <button type="submit" class="btn btn-primary" [disabled]="batchMovementForm.invalid || isLoading">
+                  Créer {{ movementsFormArray.length }} mouvement(s)
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Movements List -->
+          <div class="data-list" *ngIf="!showMovementForm && !showBatchMovementForm">
+            <div class="empty-state" *ngIf="materialDetail.movements.length === 0">
+              <i class="fa fa-exchange fa-3x"></i>
+              <p>Aucun mouvement enregistré</p>
+            </div>
+
+            <div class="data-card" *ngFor="let mv of materialDetail.movements">
+              <div class="card-main">
+                <div class="card-title">
+                  <strong>Quantité: {{ mv.quantity }}</strong>
+                  <span class="badge" [ngClass]="getStatusClass(mv.status)">{{ translateStatus(mv.status) }}</span>
+                  <span class="badge" [ngClass]="getStatusClass(mv.condition)">{{ translateStatus(mv.condition) }}</span>
+                </div>
+                <div class="card-details">
+                  <span><i class="fa fa-calendar"></i> {{ mv.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                  <span *ngIf="mv.createdBy"><i class="fa fa-user"></i> {{ mv.createdBy }}</span>
+                  <span *ngIf="mv.validatedBy"><i class="fa fa-check-circle"></i> {{ mv.validatedBy }}</span>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm btn-outline-primary" (click)="openMovementForm(mv)">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteMovement(mv)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </div>
+
+</div>

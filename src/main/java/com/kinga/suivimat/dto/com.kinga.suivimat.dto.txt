@@ -1,0 +1,693 @@
+﻿============================================================
+FILE: DashboardDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DashboardDTO {
+
+    // Statistiques globales
+    private long totalMaterials;
+    private long totalDeclarations;
+    private long totalMaintenances;
+    private long totalCategories;
+
+    // Répartition des matériels par statut
+    private Map<String, Long> materialsByStatus;
+
+    // Répartition des matériels par condition
+    private Map<String, Long> materialsByCondition;
+
+    // Répartition des déclarations par statut
+    private Map<String, Long> declarationsByStatus;
+
+    // Répartition des maintenances par statut
+    private Map<String, Long> maintenancesByStatus;
+
+    // Répartition des matériels par catégorie
+    private Map<String, Long> materialsByCategory;
+
+    // Activité récente
+    private long recentMaterials; // Créés dans les 30 derniers jours
+    private long pendingDeclarations;
+    private long activeMaintenances;
+
+    // Métadonnées
+    private LocalDateTime generatedAt;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DashboardFilter {
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
+        private Long categoryId;
+        private String materialStatus;
+        private String declarationStatus;
+        private String maintenanceStatus;
+    }
+}
+
+
+
+============================================================
+FILE: DeclarationDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Declaration;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public abstract class DeclarationDTO {
+    private Long id;
+    private LocalDateTime declarationDate;
+    private String declaredBy;
+    private String validateBy;
+    private String note;
+    private Declaration.DeclarationStatus status;
+    private String declarationType;
+
+    public static DeclarationDTO toDto(Declaration entity) {
+        if (entity == null) {
+            return null;
+        }
+        if (entity instanceof com.kinga.suivimat.entity.OutgoingDeclaration) {
+            return OutgoingDeclarationDTO.toDto((com.kinga.suivimat.entity.OutgoingDeclaration) entity);
+        } else if (entity instanceof com.kinga.suivimat.entity.ReturnDeclaration) {
+            return ReturnDeclarationDTO.toDto((com.kinga.suivimat.entity.ReturnDeclaration) entity);
+        }
+        return null;
+    }
+}
+
+
+
+============================================================
+FILE: MaintenanceDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Maintenance;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaintenanceDTO {
+    private Long id;
+    private Long materialId;
+    private String materialName;
+    private String materialSerialNumber;
+    private String maintenanceType;
+    private String description;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private BigDecimal cost;
+    private Boolean linkedToCharge;
+    private String chargeId;
+    private String performedBy;
+    private Maintenance.MaintenanceStatus status;
+
+    public static MaintenanceDTO toDto(Maintenance entity) {
+        if (entity == null) {
+            return null;
+        }
+        return MaintenanceDTO.builder()
+                .id(entity.getId())
+                .materialId(entity.getMaterial() != null ? entity.getMaterial().getId() : null)
+                .materialName(entity.getMaterial() != null ? entity.getMaterial().getName() : null)
+                .materialSerialNumber(entity.getMaterial() != null ? entity.getMaterial().getSerialNumber() : null)
+                .maintenanceType(entity.getMaintenanceType())
+                .description(entity.getDescription())
+                .startDate(entity.getStartDate())
+                .endDate(entity.getEndDate())
+                .cost(entity.getCost())
+                .linkedToCharge(entity.getLinkedToCharge())
+                .chargeId(entity.getChargeId())
+                .performedBy(entity.getPerformedBy())
+                .status(entity.getStatus())
+                .build();
+    }
+
+    public static Maintenance toEntity(MaintenanceDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        Maintenance entity = Maintenance.builder()
+                .id(dto.getId())
+                .maintenanceType(dto.getMaintenanceType())
+                .description(dto.getDescription())
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
+                .cost(dto.getCost())
+                .linkedToCharge(dto.getLinkedToCharge())
+                .chargeId(dto.getChargeId())
+                .performedBy(dto.getPerformedBy())
+                .status(dto.getStatus())
+                .build();
+        // Material sera géré par le service
+        return entity;
+    }
+}
+
+
+
+============================================================
+FILE: MaterialCategoryDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.MaterialCategory;
+import lombok.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialCategoryDTO {
+    private Long id;
+    private String name;
+    private String description;
+    private Long parentId;
+    private List<MaterialCategoryDTO> children;
+
+    public static MaterialCategoryDTO toDto(MaterialCategory entity) {
+        if (entity == null) {
+            return null;
+        }
+        return MaterialCategoryDTO.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .parentId(entity.getParent() != null ? entity.getParent().getId() : null)
+                .children(entity.getChildren() != null ?
+                        entity.getChildren().stream()
+                                .map(MaterialCategoryDTO::toDto)
+                                .collect(Collectors.toList()) : null)
+                .build();
+    }
+
+    public static MaterialCategory toEntity(MaterialCategoryDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        MaterialCategory entity = MaterialCategory.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .build();
+        // Parent et children seront gérés par le service
+        return entity;
+    }
+}
+
+
+
+============================================================
+FILE: MaterialCreateDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Material;
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialCreateDTO {
+    private String name;
+    private Long categoryId;
+    private Material.MaterialCondition currentCondition;
+    private String purchaseId;
+    private String description;
+}
+
+
+
+============================================================
+FILE: MaterialDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialState;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialDTO {
+    private Long id;
+    private String name;
+    private String reference;
+    private String serialNumber;
+    private String description;
+    private MaterialState.MaterialStatus status;
+    private Long categoryId;
+    private String categoryName;
+    private String purchaseId;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Material.MaterialCondition currentCondition;
+
+    public static MaterialDTO toDto(Material entity) {
+        if (entity == null) {
+            return null;
+        }
+        return MaterialDTO.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .reference(entity.getReference())
+                .serialNumber(entity.getSerialNumber())
+                .description(entity.getDescription())
+                .status(entity.getStatus())
+                .categoryId(entity.getCategory() != null ? entity.getCategory().getId() : null)
+                .categoryName(entity.getCategory() != null ? entity.getCategory().getName() : null)
+                .purchaseId(entity.getPurchaseId())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .currentCondition(entity.getCurrentCondition())
+                .build();
+    }
+
+    public static Material toEntity(MaterialDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        Material entity = Material.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .reference(dto.getReference())
+                .serialNumber(dto.getSerialNumber())
+                .description(dto.getDescription())
+                .status(dto.getStatus())
+                .purchaseId(dto.getPurchaseId())
+                .createdAt(dto.getCreatedAt())
+                .updatedAt(dto.getUpdatedAt())
+                .currentCondition(dto.getCurrentCondition())
+                .build();
+        // Category sera gérée par le service
+        return entity;
+    }
+}
+
+
+
+============================================================
+FILE: MaterialFullDetailDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialState;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialFullDetailDTO {
+    // Informations de base du matériel
+    private Long id;
+    private String name;
+    private String reference;
+    private String serialNumber;
+    private String description;
+    private MaterialState.MaterialStatus status;
+    private String purchaseId;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Material.MaterialCondition currentCondition;
+
+    // Catégorie complète
+    private MaterialCategoryDTO category;
+
+    // Liste de tous les mouvements
+    private List<MaterialMovementDTO> movements;
+
+    // Liste de tous les états
+    private List<MaterialStateDTO> states;
+
+    // Liste de tous les entretiens
+    private List<MaintenanceDTO> maintenances;
+
+    public static MaterialFullDetailDTO toDto(Material entity) {
+        if (entity == null) {
+            return null;
+        }
+        return MaterialFullDetailDTO.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .reference(entity.getReference())
+                .serialNumber(entity.getSerialNumber())
+                .description(entity.getDescription())
+                .status(entity.getStatus())
+                .purchaseId(entity.getPurchaseId())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .currentCondition(entity.getCurrentCondition())
+                .category(MaterialCategoryDTO.toDto(entity.getCategory()))
+                .movements(entity.getMovements() != null ?
+                        entity.getMovements().stream()
+                                .map(MaterialMovementDTO::toDto)
+                                .collect(Collectors.toList()) : null)
+                .states(entity.getStates() != null ?
+                        entity.getStates().stream()
+                                .map(MaterialStateDTO::toDto)
+                                .collect(Collectors.toList()) : null)
+                .maintenances(entity.getMaintenances() != null ?
+                        entity.getMaintenances().stream()
+                                .map(MaintenanceDTO::toDto)
+                                .collect(Collectors.toList()) : null)
+                .build();
+    }
+}
+
+
+
+============================================================
+FILE: MaterialMovementDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialMovement;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialMovementDTO {
+    private Long id;
+    private Long materialId;
+    private String materialName;
+    private String materialSerialNumber;
+    private int quantity;
+    private LocalDateTime createdAt;
+    private LocalDateTime validatedAt;
+    private String createdBy;
+    private String validatedBy;
+    private String verifiedBy;
+    private MaterialMovement.MovementStatus status;
+    private LocalDateTime movementDate;
+    private Material.MaterialCondition condition;
+    private Long outgoingDeclarationId;
+    private Long returnDeclarationId;
+
+    public static MaterialMovementDTO toDto(MaterialMovement entity) {
+        if (entity == null) {
+            return null;
+        }
+        return MaterialMovementDTO.builder()
+                .id(entity.getId())
+                .materialId(entity.getMaterial() != null ? entity.getMaterial().getId() : null)
+                .materialName(entity.getMaterial() != null ? entity.getMaterial().getName() : null)
+                .materialSerialNumber(entity.getMaterial() != null ? entity.getMaterial().getSerialNumber() : null)
+                .quantity(entity.getQuantity())
+                .createdAt(entity.getCreatedAt())
+                .validatedAt(entity.getValidatedAt())
+                .createdBy(entity.getCreatedBy())
+                .validatedBy(entity.getValidatedBy())
+                .verifiedBy(entity.getVerifiedBy())
+                .status(entity.getStatus())
+                .movementDate(entity.getMovementDate())
+                .condition(entity.getCondition())
+                .outgoingDeclarationId(entity.getOutgoingDeclaration() != null ? entity.getOutgoingDeclaration().getId() : null)
+                .returnDeclarationId(entity.getReturnDeclaration() != null ? entity.getReturnDeclaration().getId() : null)
+                .build();
+    }
+
+    public static MaterialMovement toEntity(MaterialMovementDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        MaterialMovement entity = MaterialMovement.builder()
+                .id(dto.getId())
+                .quantity(dto.getQuantity())
+                .createdAt(dto.getCreatedAt())
+                .validatedAt(dto.getValidatedAt())
+                .createdBy(dto.getCreatedBy())
+                .validatedBy(dto.getValidatedBy())
+                .verifiedBy(dto.getVerifiedBy())
+                .status(dto.getStatus())
+                .movementDate(dto.getMovementDate())
+                .condition(dto.getCondition())
+                .build();
+        // Les relations seront gérées par le service
+        return entity;
+    }
+}
+
+
+
+============================================================
+FILE: MaterialStateDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.Material;
+import com.kinga.suivimat.entity.MaterialState;
+import lombok.*;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class MaterialStateDTO {
+    private Long id;
+    private Long materialId;
+    private String materialName;
+    private Material.MaterialCondition state;
+    private String description;
+    private String updatedBy;
+    private LocalDateTime date;
+
+    public static MaterialStateDTO toDto(MaterialState entity) {
+        if (entity == null) {
+            return null;
+        }
+        return MaterialStateDTO.builder()
+                .id(entity.getId())
+                .materialId(entity.getMaterial() != null ? entity.getMaterial().getId() : null)
+                .materialName(entity.getMaterial() != null ? entity.getMaterial().getName() : null)
+                .state(entity.getState())
+                .description(entity.getDescription())
+                .updatedBy(entity.getUpdatedBy())
+                .date(entity.getDate())
+                .build();
+    }
+
+    public static MaterialState toEntity(MaterialStateDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        return MaterialState.builder()
+                .id(dto.getId())
+                .state(dto.getState())
+                .description(dto.getDescription())
+                .updatedBy(dto.getUpdatedBy())
+                .date(dto.getDate())
+                .build();
+        // Material sera géré par le service
+    }
+}
+
+
+
+============================================================
+FILE: OutgoingDeclarationDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.OutgoingDeclaration;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class OutgoingDeclarationDTO extends DeclarationDTO {
+    private List<Long> movementIds;
+    private String usagePurpose;
+    private String validatedBy;
+
+    public static OutgoingDeclarationDTO toDto(OutgoingDeclaration entity) {
+        if (entity == null) {
+            return null;
+        }
+        OutgoingDeclarationDTO dto = OutgoingDeclarationDTO.builder()
+                .movementIds(entity.getMovements() != null ?
+                        entity.getMovements().stream()
+                                .map(m -> m.getId())
+                                .collect(Collectors.toList()) : null)
+                .usagePurpose(entity.getUsagePurpose())
+                .validatedBy(entity.getValidatedBy())
+                .build();
+
+        dto.setId(entity.getId());
+        dto.setDeclarationDate(entity.getDeclarationDate());
+        dto.setDeclaredBy(entity.getDeclaredBy());
+        dto.setValidateBy(entity.getValidateBy());
+        dto.setNote(entity.getNote());
+        dto.setStatus(entity.getStatus());
+        dto.setDeclarationType(entity.getDeclarationType());
+
+        return dto;
+    }
+
+    public static OutgoingDeclaration toEntity(OutgoingDeclarationDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        OutgoingDeclaration entity = OutgoingDeclaration.builder()
+                .usagePurpose(dto.getUsagePurpose())
+                .validatedBy(dto.getValidatedBy())
+                .build();
+
+        entity.setId(dto.getId());
+        entity.setDeclarationDate(dto.getDeclarationDate());
+        entity.setDeclaredBy(dto.getDeclaredBy());
+        entity.setValidateBy(dto.getValidateBy());
+        entity.setNote(dto.getNote());
+        entity.setStatus(dto.getStatus());
+
+        // Les mouvements seront gérés par le service
+        return entity;
+    }
+}
+
+
+
+============================================================
+FILE: ReturnDeclarationDTO.java
+PACKAGE: com.kinga.suivimat.dto
+============================================================
+
+package com.kinga.suivimat.dto;
+
+import com.kinga.suivimat.entity.ReturnDeclaration;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ReturnDeclarationDTO extends DeclarationDTO {
+    private List<Long> movementIds;
+    private LocalDateTime verifiedAt;
+    private String verifiedBy;
+    private String returnConditionNote;
+
+    public static ReturnDeclarationDTO toDto(ReturnDeclaration entity) {
+        if (entity == null) {
+            return null;
+        }
+        ReturnDeclarationDTO dto = ReturnDeclarationDTO.builder()
+                .movementIds(entity.getMovements() != null ?
+                        entity.getMovements().stream()
+                                .map(m -> m.getId())
+                                .collect(Collectors.toList()) : null)
+                .verifiedAt(entity.getVerifiedAt())
+                .verifiedBy(entity.getVerifiedBy())
+                .returnConditionNote(entity.getReturnConditionNote())
+                .build();
+
+        dto.setId(entity.getId());
+        dto.setDeclarationDate(entity.getDeclarationDate());
+        dto.setDeclaredBy(entity.getDeclaredBy());
+        dto.setValidateBy(entity.getValidateBy());
+        dto.setNote(entity.getNote());
+        dto.setStatus(entity.getStatus());
+        dto.setDeclarationType(entity.getDeclarationType());
+
+        return dto;
+    }
+
+    public static ReturnDeclaration toEntity(ReturnDeclarationDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        ReturnDeclaration entity = ReturnDeclaration.builder()
+                .verifiedAt(dto.getVerifiedAt())
+                .verifiedBy(dto.getVerifiedBy())
+                .returnConditionNote(dto.getReturnConditionNote())
+                .build();
+
+        entity.setId(dto.getId());
+        entity.setDeclarationDate(dto.getDeclarationDate());
+        entity.setDeclaredBy(dto.getDeclaredBy());
+        entity.setValidateBy(dto.getValidateBy());
+        entity.setNote(dto.getNote());
+        entity.setStatus(dto.getStatus());
+
+        // Les mouvements seront gérés par le service
+        return entity;
+    }
+}
+
+
+

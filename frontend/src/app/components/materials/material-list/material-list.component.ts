@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +13,7 @@ import { MaterialService } from '../../../services/material.service';
 import { CategoryService } from '../../../services/category.service';
 import { Material } from '../../../models/material';
 import { MaterialCategory } from '../../../models/category';
-import { MaterialStatus, MaterialCondition } from '../../../models/enums';
+import { MaterialCondition } from '../../../models/enums';
 import { MaterialFormComponent } from '../material-form/material-form.component';
 import { MaterialStatusModalComponent } from '../material-status-modal/material-status-modal.component';
 import {MenueCategoryComponent} from '../../../shared/menue-category/menue-category.component';
@@ -53,7 +54,8 @@ export class MaterialListComponent implements OnInit, OnDestroy {
   constructor(
     private materialService: MaterialService,
     private categoryService: CategoryService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -124,9 +126,8 @@ export class MaterialListComponent implements OnInit, OnDestroy {
         m.reference?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         m.serialNumber?.toLowerCase().includes(this.searchTerm.toLowerCase());
 
-      const categoryId = typeof m.category === 'number' ? m.category : (m.category as any)?.id;
       const matchCategory = this.selectedCategories.size === 0 ||
-        (categoryId && this.selectedCategories.has(categoryId));
+        (m.categoryId && this.selectedCategories.has(m.categoryId));
 
       return matchSearch && matchCategory;
     });
@@ -330,13 +331,15 @@ export class MaterialListComponent implements OnInit, OnDestroy {
     return 'unknown';
   }
 
-  getCategoryName(category: any): string {
-    if (!category) return 'Non catégorisé';
-    if (typeof category === 'number') return 'Non catégorisé';
-    return (category as any).name || 'Non catégorisé';
+  getCategoryName(material: Material): string {
+    return material.categoryName || 'Non catégorisé';
   }
 
   clearError(): void {
     this.error = null;
+  }
+
+  viewMaterialDetail(material: Material): void {
+    this.router.navigate(['/materials', material.id]);
   }
 }

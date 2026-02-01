@@ -28,15 +28,19 @@ export class CategoryFormComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', Validators.required],
-      parent: [null]
+      description: [''],
+      parentId: [null]
     });
   }
 
   ngOnInit(): void {
     this.isEditMode = !!this.category;
     if (this.isEditMode && this.category) {
-      this.form.patchValue(this.category);
+      this.form.patchValue({
+        name: this.category.name,
+        description: this.category.description,
+        parentId: this.category.parentId
+      });
     }
   }
 

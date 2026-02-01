@@ -58,9 +58,10 @@ export class ApiService {
   /**
    * DELETE request
    */
-  delete<T>(endpoint: string): Observable<T> {
+  delete<T>(endpoint: string, body?: any): Observable<T> {
     this.isLoading$.next(true);
-    return this.http.delete<T>(`${this.apiUrl}${endpoint}`)
+    const options = body ? { body } : {};
+    return this.http.delete<T>(`${this.apiUrl}${endpoint}`, options)
       .pipe(
         finalize(() => this.isLoading$.next(false)),
         catchError(this.handleError)

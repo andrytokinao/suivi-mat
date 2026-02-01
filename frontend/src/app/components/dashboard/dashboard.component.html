@@ -1,0 +1,322 @@
+<div class="dashboard-container">
+
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h1>
+      <i class="fa fa-dashboard"></i>
+      Tableau de bord
+    </h1>
+    <div class="header-actions">
+      <button class="btn btn-outline-primary" (click)="toggleFilters()">
+        <i class="fa fa-filter"></i>
+        {{ showFilters ? 'Masquer les filtres' : 'Afficher les filtres' }}
+      </button>
+      <button class="btn btn-primary" (click)="loadDashboard()" [disabled]="isLoading">
+        <i class="fa fa-refresh" [class.fa-spin]="isLoading"></i>
+        Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Panel -->
+  <div class="filters-panel" *ngIf="showFilters" [@slideInOut]>
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <div class="filters-grid">
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date début</mat-label>
+          <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+          <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+          <mat-datepicker #startPicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date fin</mat-label>
+          <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+          <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Catégorie</mat-label>
+          <mat-select formControlName="categoryId">
+            <mat-option [value]="null">Toutes les catégories</mat-option>
+            <mat-option *ngFor="let cat of categories" [value]="cat.id">
+              {{ cat.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Statut matériel</mat-label>
+          <mat-select formControlName="materialStatus">
+            <mat-option [value]="null">Tous les statuts</mat-option>
+            <mat-option *ngFor="let status of materialStatuses" [value]="status">
+              {{ translateStatus(status) }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Statut déclaration</mat-label>
+          <mat-select formControlName="declarationStatus">
+            <mat-option [value]="null">Tous les statuts</mat-option>
+            <mat-option *ngFor="let status of declarationStatuses" [value]="status">
+              {{ translateStatus(status) }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Statut maintenance</mat-label>
+          <mat-select formControlName="maintenanceStatus">
+            <mat-option [value]="null">Tous les statuts</mat-option>
+            <mat-option *ngFor="let status of maintenanceStatuses" [value]="status">
+              {{ translateStatus(status) }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="filters-actions">
+        <button type="button" class="btn btn-secondary" (click)="resetFilters()">
+          <i class="fa fa-times"></i> Réinitialiser
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+          <i class="fa fa-search"></i> Appliquer les filtres
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error">
+    <i class="fa fa-exclamation-triangle"></i> {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-progress-spinner mode="indeterminate" diameter="50"></mat-progress-spinner>
+    <p>Chargement des statistiques...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div class="dashboard-content" *ngIf="!isLoading && dashboard">
+
+    <!-- Stats Cards -->
+    <div class="stats-cards">
+      <div class="stat-card primary">
+        <div class="stat-icon">
+          <i class="fa fa-cube"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ dashboard.totalMaterials }}</h3>
+          <p>Total Matériels</p>
+        </div>
+      </div>
+
+      <div class="stat-card info">
+        <div class="stat-icon">
+          <i class="fa fa-file-text"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ dashboard.totalDeclarations }}</h3>
+          <p>Total Déclarations</p>
+        </div>
+      </div>
+
+      <div class="stat-card warning">
+        <div class="stat-icon">
+          <i class="fa fa-wrench"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ dashboard.totalMaintenances }}</h3>
+          <p>Total Maintenances</p>
+        </div>
+      </div>
+
+      <div class="stat-card success">
+        <div class="stat-icon">
+          <i class="fa fa-tags"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ dashboard.totalCategories }}</h3>
+          <p>Total Catégories</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Cards -->
+    <div class="activity-cards">
+      <div class="activity-card">
+        <div class="activity-header">
+          <i class="fa fa-clock-o"></i>
+          <span>Matériels récents</span>
+        </div>
+        <div class="activity-value">{{ dashboard.recentMaterials }}</div>
+        <div class="activity-label">Derniers 30 jours</div>
+      </div>
+
+      <div class="activity-card warning">
+        <div class="activity-header">
+          <i class="fa fa-hourglass-half"></i>
+          <span>Déclarations en attente</span>
+        </div>
+        <div class="activity-value">{{ dashboard.pendingDeclarations }}</div>
+        <div class="activity-label">À traiter</div>
+      </div>
+
+      <div class="activity-card info">
+        <div class="activity-header">
+          <i class="fa fa-cogs"></i>
+          <span>Maintenances actives</span>
+        </div>
+        <div class="activity-value">{{ dashboard.activeMaintenances }}</div>
+        <div class="activity-label">En cours</div>
+      </div>
+    </div>
+
+    <!-- Distribution Charts -->
+    <div class="charts-grid">
+
+      <!-- Materials by Status -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h4><i class="fa fa-pie-chart"></i> Matériels par statut</h4>
+        </div>
+        <div class="chart-content">
+          <div class="distribution-list" *ngIf="dashboard.materialsByStatus">
+            <div class="distribution-item" *ngFor="let status of getStatusKeys(dashboard.materialsByStatus)">
+              <div class="item-label">
+                <span class="status-dot" [ngClass]="getStatusClass(status)"></span>
+                {{ translateStatus(status) }}
+              </div>
+              <div class="item-bar">
+                <div class="bar-fill"
+                     [ngClass]="getStatusClass(status)"
+                     [style.width.%]="getPercentage(dashboard.materialsByStatus[status], dashboard.totalMaterials)">
+                </div>
+              </div>
+              <div class="item-value">
+                {{ dashboard.materialsByStatus[status] }}
+                <small>({{ getPercentage(dashboard.materialsByStatus[status], dashboard.totalMaterials) }}%)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials by Condition -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h4><i class="fa fa-heartbeat"></i> Matériels par condition</h4>
+        </div>
+        <div class="chart-content">
+          <div class="distribution-list" *ngIf="dashboard.materialsByCondition">
+            <div class="distribution-item" *ngFor="let condition of getStatusKeys(dashboard.materialsByCondition)">
+              <div class="item-label">
+                <span class="status-dot" [ngClass]="getStatusClass(condition)"></span>
+                {{ translateStatus(condition) }}
+              </div>
+              <div class="item-bar">
+                <div class="bar-fill"
+                     [ngClass]="getStatusClass(condition)"
+                     [style.width.%]="getPercentage(dashboard.materialsByCondition[condition], dashboard.totalMaterials)">
+                </div>
+              </div>
+              <div class="item-value">
+                {{ dashboard.materialsByCondition[condition] }}
+                <small>({{ getPercentage(dashboard.materialsByCondition[condition], dashboard.totalMaterials) }}%)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Declarations by Status -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h4><i class="fa fa-file-text-o"></i> Déclarations par statut</h4>
+        </div>
+        <div class="chart-content">
+          <div class="distribution-list" *ngIf="dashboard.declarationsByStatus">
+            <div class="distribution-item" *ngFor="let status of getStatusKeys(dashboard.declarationsByStatus)">
+              <div class="item-label">
+                <span class="status-dot" [ngClass]="getStatusClass(status)"></span>
+                {{ translateStatus(status) }}
+              </div>
+              <div class="item-bar">
+                <div class="bar-fill"
+                     [ngClass]="getStatusClass(status)"
+                     [style.width.%]="getPercentage(dashboard.declarationsByStatus[status], dashboard.totalDeclarations)">
+                </div>
+              </div>
+              <div class="item-value">
+                {{ dashboard.declarationsByStatus[status] }}
+                <small>({{ getPercentage(dashboard.declarationsByStatus[status], dashboard.totalDeclarations) }}%)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maintenances by Status -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h4><i class="fa fa-wrench"></i> Maintenances par statut</h4>
+        </div>
+        <div class="chart-content">
+          <div class="distribution-list" *ngIf="dashboard.maintenancesByStatus">
+            <div class="distribution-item" *ngFor="let status of getStatusKeys(dashboard.maintenancesByStatus)">
+              <div class="item-label">
+                <span class="status-dot" [ngClass]="getStatusClass(status)"></span>
+                {{ translateStatus(status) }}
+              </div>
+              <div class="item-bar">
+                <div class="bar-fill"
+                     [ngClass]="getStatusClass(status)"
+                     [style.width.%]="getPercentage(dashboard.maintenancesByStatus[status], dashboard.totalMaintenances)">
+                </div>
+              </div>
+              <div class="item-value">
+                {{ dashboard.maintenancesByStatus[status] }}
+                <small>({{ getPercentage(dashboard.maintenancesByStatus[status], dashboard.totalMaintenances) }}%)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials by Category -->
+      <div class="chart-card full-width">
+        <div class="chart-header">
+          <h4><i class="fa fa-folder-open"></i> Matériels par catégorie</h4>
+        </div>
+        <div class="chart-content">
+          <div class="category-grid" *ngIf="dashboard.materialsByCategory">
+            <div class="category-item" *ngFor="let cat of getStatusKeys(dashboard.materialsByCategory)">
+              <div class="category-name">{{ cat }}</div>
+              <div class="category-count">{{ dashboard.materialsByCategory[cat] }}</div>
+              <div class="category-bar">
+                <div class="bar-fill status-info"
+                     [style.width.%]="getPercentage(dashboard.materialsByCategory[cat], dashboard.totalMaterials)">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Generated At -->
+    <div class="dashboard-footer" *ngIf="dashboard.generatedAt">
+      <small>
+        <i class="fa fa-clock-o"></i>
+        Généré le {{ dashboard.generatedAt | date:'dd/MM/yyyy à HH:mm' }}
+      </small>
+    </div>
+
+  </div>
+
+</div>

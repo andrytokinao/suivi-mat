@@ -1,12 +1,10 @@
 package com.kinga.suivimat.entity;
 
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -23,10 +21,8 @@ public class MaterialCategory {
     private String description;
 
     @ManyToOne
-    @JsonBackReference
     private MaterialCategory parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<MaterialCategory> children;
+    private Set<MaterialCategory> children = new HashSet<>();
 }

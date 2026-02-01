@@ -66,7 +66,7 @@ export class MenueCategoryComponent implements OnInit{
   }
 
   getCategoryCount(id: number): number {
-    return this.materials.filter(m => m.category === id).length;
+    return this.materials.filter(m => m.categoryId === id).length;
   }
 
   clearAllFilters() {

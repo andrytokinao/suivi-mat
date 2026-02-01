@@ -1,3 +1,4 @@
+// Corresponds to MaterialState.MaterialStatus in backend
 export enum MaterialStatus {
   AVAILABLE = 'AVAILABLE',
   IN_USE = 'IN_USE',
@@ -6,6 +7,7 @@ export enum MaterialStatus {
   RETIRED = 'RETIRED'
 }
 
+// Corresponds to Material.MaterialCondition in backend
 export enum MaterialCondition {
   GOOD = 'GOOD',
   DAMAGED = 'DAMAGED',
@@ -13,12 +15,14 @@ export enum MaterialCondition {
   IN_REPAIR = 'IN_REPAIR'
 }
 
+// Corresponds to Declaration.DeclarationStatus in backend
 export enum DeclarationStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED'
 }
 
+// Corresponds to MaterialMovement.MovementStatus in backend
 export enum MovementStatus {
   PENDING_VALIDATION = 'PENDING_VALIDATION',
   VALIDATED = 'VALIDATED',
@@ -27,6 +31,7 @@ export enum MovementStatus {
   REJECTED = 'REJECTED'
 }
 
+// Corresponds to Maintenance.MaintenanceStatus in backend
 export enum MaintenanceStatus {
   PLANNED = 'PLANNED',
   IN_PROGRESS = 'IN_PROGRESS',

@@ -16,6 +16,8 @@ import { Material } from '../../../models/material';
 })
 export class OutgoingDeclarationFormComponent implements OnInit {
   @Input() declaration?: OutgoingDeclaration;
+  @Input() preselectedMaterialId?: number;
+  @Input() preselectedMaterialName?: string;
 
   form!: FormGroup;
   submitted = false;
@@ -51,17 +53,31 @@ export class OutgoingDeclarationFormComponent implements OnInit {
     if (this.isEditMode && this.declaration) {
       this.form.patchValue(this.declaration);
     }
+
+    // If a material was preselected, add it to the form
+    if (this.preselectedMaterialId) {
+      this.addMaterialWithId(this.preselectedMaterialId);
+    }
   }
 
   loadAvailableMaterials(): void {
     this.materialService.getMaterials().subscribe(materials => {
-      this.availableMaterials = materials;
+      // Filter materials with availableQuantity > 0 (has stock available for outgoing)
+      this.availableMaterials = materials.filter(m => m.availableQuantity > 0);
     });
   }
 
   addMaterial(): void {
     const group = this.fb.group({
       materialId: [null, Validators.required],
+      quantity: [1, [Validators.required, Validators.min(1)]]
+    });
+    this.materials.push(group);
+  }
+
+  addMaterialWithId(materialId: number): void {
+    const group = this.fb.group({
+      materialId: [materialId, Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]]
     });
     this.materials.push(group);
